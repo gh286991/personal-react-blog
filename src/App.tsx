@@ -1,21 +1,14 @@
-import type { Post, PostSummary } from './content';
+import type { Post } from './content';
+import type { AppProps } from './types';
 import { Layout } from './components/Layout';
 import { PostList } from './components/PostList';
 import { PostPage } from './components/PostPage';
-
-export type PageKind = 'list' | 'detail' | 'not-found';
-
-export interface AppProps {
-  page: PageKind;
-  posts: PostSummary[];
-  post?: Post | null;
-}
 
 export function App({ page, posts, post }: AppProps) {
   const isList = page === 'list';
   const pageTitle = isList ? '我的極簡 React 部落格' : post?.title ?? '文章未找到';
   const description = isList
-    ? '用 React + Express 打造的 Markdown SSR 部落格ㄒfddfdf'
+    ? '用 React + Express 打造的 Markdown SSR 部落格'
     : post?.summary ?? '找不到文章內容';
 
   return (

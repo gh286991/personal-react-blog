@@ -1,204 +1,180 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import express from 'express';
-import React from 'react';
-import { renderToString } from 'react-dom/server';
+import type { ViteDevServer } from 'vite';
 
-import App, { AppProps } from './App';
+import type { AppProps } from './types';
 import { loadPost, loadPostSummaries } from './content';
 
 const PORT = Number(process.env.PORT ?? 3000);
-const CONTENT_BASE = process.env.CONTENT_BASE ?? process.cwd();
-const PUBLIC_DIR = path.join(CONTENT_BASE, 'public');
-const POSTS_DIR = path.join(CONTENT_BASE, 'posts');
-const isDev = process.env.NODE_ENV !== 'production';
+const IS_PROD = process.env.NODE_ENV === 'production';
+const ROOT = process.cwd();
+const POSTS_DIR = path.resolve(ROOT, 'posts');
 
-const app = express();
+async function createServer() {
+  const app = express();
+  let vite: ViteDevServer | undefined;
+  let template: string = '';
+  let serverRender:
+    | ((props: AppProps) => Promise<{ html: string }>)
+    | undefined;
 
-app.use(
-  '/static',
-  express.static(PUBLIC_DIR, {
-    maxAge: isDev ? 0 : '1h',
-    etag: !isDev,
-    lastModified: !isDev,
-    setHeaders: isDev
-      ? (res) => {
-          res.set('Cache-Control', 'no-store');
-        }
-      : undefined,
-  }),
-);
-
-if (isDev) {
-  setupDevReload(app);
-  app.get('/dev/ping', (_req, res) => {
-    res.type('text/plain').send('ok');
-  });
-}
-
-app.get('/', (_req, res) => {
-  const props: AppProps = { page: 'list', posts: loadPostSummaries() };
-  sendPage(res, props, 200);
-});
-
-app.get('/posts/:slug', (req, res) => {
-  const post = loadPost(req.params.slug);
-  if (!post) {
-    sendPage(res, { page: 'not-found', posts: [], post: null }, 404);
-    return;
+  if (!IS_PROD) {
+    const { createServer: createViteServer } = await import('vite');
+    vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'custom',
+    });
+    app.use(vite.middlewares);
+    setupMarkdownHMR(vite);
+  } else {
+    template = fs.readFileSync(resolve('dist/client/index.html'), 'utf-8');
+    serverRender = (await import(resolve('dist/server/entry-server.js'))).render;
+    app.use(
+      '/assets',
+      express.static(resolve('dist/client/assets'), { maxAge: '1y' }),
+    );
+    app.use(express.static(resolve('dist/client'), { index: false }));
   }
 
-  sendPage(res, { page: 'detail', posts: [], post }, 200);
-});
-
-app.use((_req, res) => {
-  sendPage(res, { page: 'not-found', posts: [], post: null }, 404);
-});
-
-function sendPage(res: express.Response, props: AppProps, status: number) {
-  res.status(status).type('html').send(renderDocument(props));
-}
-
-function renderDocument(props: AppProps) {
-  const appHtml = renderToString(React.createElement(App, props));
-  const payload = JSON.stringify(props).replace(/</g, '\\u003c');
-  const description =
-    props.page === 'detail'
-      ? props.post?.summary ?? 'React SSR Blog'
-      : '極簡、低記憶體的 React SSR 個人部落格';
-  const title =
-    props.page === 'detail' && props.post ? props.post.title : 'React SSR Blog';
-  const escapeAttr = (value: string) => value.replace(/"/g, '&quot;');
-
-  return `<!doctype html>
-<html lang="zh-Hant">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${escapeAttr(title)}</title>
-    <meta name="description" content="${escapeAttr(description)}" />
-    <link rel="stylesheet" href="/static/styles.css" />
-  </head>
-  <body>
-    <div id="root">${appHtml}</div>
-    <script>window.__INITIAL_DATA__ = ${payload}</script>
-    <script src="/static/client.js" defer></script>
-  </body>
-</html>`;
-}
-
-app.listen(PORT, () => {
-  console.log(`✅ React SSR blog running on http://localhost:${PORT}`);
-});
-
-function setupDevReload(app: express.Express) {
-  const clients = new Set<express.Response>();
-
-  const broadcast = (data: string) => {
-    for (const client of clients) {
-      client.write(`data: ${data}\n\n`);
-    }
-  };
-
-  app.get('/dev/reload', (req, res) => {
-    res.set({
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-      'Content-Type': 'text/event-stream',
-    });
-    res.flushHeaders?.();
-    res.write('retry: 1000\n\n');
-
-    clients.add(res);
-    req.on('close', () => {
-      clients.delete(res);
-    });
+  app.get('/', async (req, res) => {
+    const props: AppProps = { page: 'list', posts: loadPostSummaries() };
+    await renderPage(req, res, 200, props, { vite, template, serverRender });
   });
 
-  let reloadTimer: NodeJS.Timeout | null = null;
-  type ReloadEvent = 'reload:content' | 'reload:bundle';
+  app.get('/posts/:slug', async (req, res) => {
+    const post = loadPost(req.params.slug);
+    if (!post) {
+      const props: AppProps = {
+        page: 'not-found',
+        posts: [],
+        post: null,
+      };
+      await renderPage(req, res, 404, props, { vite, template, serverRender });
+      return;
+    }
 
-  const scheduleReload = (event: ReloadEvent) => {
+    const props: AppProps = { page: 'detail', posts: [], post };
+    await renderPage(req, res, 200, props, { vite, template, serverRender });
+  });
+
+  app.use(async (req, res) => {
+    const props: AppProps = { page: 'not-found', posts: [], post: null };
+    await renderPage(req, res, 404, props, { vite, template, serverRender });
+  });
+
+  return app;
+}
+
+async function renderPage(
+  req: express.Request,
+  res: express.Response,
+  status: number,
+  props: AppProps,
+  context: {
+    vite?: ViteDevServer;
+    template: string;
+    serverRender?: (props: AppProps) => Promise<{ html: string }>;
+  },
+) {
+  try {
+    let htmlTemplate: string;
+    let render: (props: AppProps) => Promise<{ html: string }>;
+
+    if (context.vite) {
+      const rawTemplate = fs.readFileSync(resolve('index.html'), 'utf-8');
+      htmlTemplate = await context.vite.transformIndexHtml(
+        req.originalUrl,
+        rawTemplate,
+      );
+      render = (await context.vite.ssrLoadModule('/src/entry-server.tsx'))
+        .render;
+    } else {
+      htmlTemplate = context.template;
+      render = context.serverRender!;
+    }
+
+    const { html } = await render(props);
+    const payload = JSON.stringify(props).replace(/</g, '\\u003c');
+    const { title, description } = getMeta(props);
+    const response = htmlTemplate
+      .replace('%APP_TITLE%', escapeAttr(title))
+      .replace('%APP_DESCRIPTION%', escapeAttr(description))
+      .replace('<!--app-html-->', html)
+      .replace('<!--app-data-->', payload);
+
+    res.status(status).setHeader('Content-Type', 'text/html').send(response);
+  } catch (error) {
+    if (context.vite && error instanceof Error) {
+      context.vite.ssrFixStacktrace(error);
+    }
+    console.error('[server] render failed', error);
+    res.status(500).send('Internal Server Error');
+  }
+}
+
+function getMeta(props: AppProps) {
+  if (props.page === 'detail' && props.post) {
+    return {
+      title: props.post.title,
+      description: props.post.summary ?? 'React SSR Blog',
+    };
+  }
+
+  return {
+    title: '我的極簡 React 部落格',
+    description: '用 React + Express 打造的 Markdown SSR 部落格',
+  };
+}
+
+function escapeAttr(value: string) {
+  return value.replace(/"/g, '&quot;');
+}
+
+function resolve(p: string) {
+  return path.resolve(ROOT, p);
+}
+
+async function start() {
+  const app = await createServer();
+  app.listen(PORT, () => {
+    console.log(`✅ React SSR blog running on http://localhost:${PORT}`);
+  });
+}
+
+start();
+function setupMarkdownHMR(vite: ViteDevServer) {
+  const watchEvents: Array<'add' | 'change' | 'unlink'> = [
+    'add',
+    'change',
+    'unlink',
+  ];
+  try {
+    vite.watcher.add(POSTS_DIR);
+  } catch (error) {
+    console.warn('[dev] Unable to watch posts directory for HMR:', error);
+  }
+
+  let reloadTimer: NodeJS.Timeout | null = null;
+
+  const triggerReload = () => {
     if (reloadTimer) {
       clearTimeout(reloadTimer);
     }
     reloadTimer = setTimeout(() => {
+      vite.ws.send({ type: 'full-reload', path: '*' });
       reloadTimer = null;
-      broadcast(event);
-    }, 50);
+    }, 150);
   };
 
-  const watchers: fs.FSWatcher[] = [];
-
-  type WatchResult =
-    | 'reload:content'
-    | 'reload:bundle'
-    | { kind: 'css'; file: string };
-
-  function watchDirectory(
-    dir: string,
-    recursive: boolean,
-    filter?: (filename: string | null) => WatchResult | null,
-  ) {
-    if (!fs.existsSync(dir)) {
+  const handleChange = (file: string) => {
+    if (!file || !file.startsWith(POSTS_DIR)) {
       return;
     }
+    triggerReload();
+  };
 
-    const handler: fs.WatchListener<string> = (_eventType, filename) => {
-      if (!filter) {
-        scheduleReload('reload:content');
-        return;
-      }
-      const result = filter(filename);
-      if (!result) {
-        return;
-      }
-      if (result === 'reload:content' || result === 'reload:bundle') {
-        scheduleReload(result);
-      } else if (result.kind === 'css') {
-        broadcast(`css:${result.file}`);
-      }
-    };
-
-    try {
-      watchers.push(fs.watch(dir, { recursive }, handler));
-    } catch {
-      if (recursive) {
-        try {
-          watchers.push(fs.watch(dir, { recursive: false }, handler));
-        } catch (error) {
-          console.warn(`[dev-reload] 無法監看 ${dir}:`, error);
-        }
-      } else {
-        console.warn(`[dev-reload] 無法監看 ${dir}`);
-      }
-    }
-  }
-
-  watchDirectory(POSTS_DIR, true, (filename) => {
-    if (!filename || filename.endsWith('.md')) {
-      return 'reload:content';
-    }
-    return null;
-  });
-
-  watchDirectory(PUBLIC_DIR, false, (filename) => {
-    if (!filename) {
-      return null;
-    }
-
-    if (filename.endsWith('.css')) {
-      return { kind: 'css', file: filename };
-    }
-
-    if (filename === 'client.js') {
-      return 'reload:bundle';
-    }
-
-    return null;
-  });
-
-  process.on('exit', () => {
-    watchers.forEach((watcher) => watcher.close());
+  watchEvents.forEach((event) => {
+    vite.watcher.on(event, handleChange);
   });
 }

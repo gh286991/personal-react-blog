@@ -4,11 +4,7 @@ import path from 'node:path';
 const ROOT = process.cwd();
 const DIST = path.join(ROOT, 'dist');
 await fs.mkdir(DIST, { recursive: true });
-
-await Promise.all([
-  copyDir(path.join(ROOT, 'public'), path.join(DIST, 'public'), new Set(['client.js'])),
-  copyDir(path.join(ROOT, 'posts'), path.join(DIST, 'posts')),
-]);
+await copyDir(path.join(ROOT, 'posts'), path.join(DIST, 'posts'));
 
 async function copyDir(source, target, exclude = new Set()) {
   try {
@@ -27,8 +23,10 @@ async function copyDir(source, target, exclude = new Set()) {
       }
     }
   } catch (error) {
-    if ((error instanceof Error && 'code' in error && error.code === 'ENOENT') ||
-        (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT')) {
+    if (
+      (error instanceof Error && 'code' in error && error.code === 'ENOENT') ||
+      (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT')
+    ) {
       return;
     }
     throw error;
