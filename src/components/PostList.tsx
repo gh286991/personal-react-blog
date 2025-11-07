@@ -55,40 +55,115 @@ export function PostList({ posts }: PostListProps) {
   const pagePosts = filteredPosts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <div>
-      <section className="filters-panel">
-        <div className="filters-header">
-          <h3>內容模擬區</h3>
-          <p>標籤、分類與分頁目前是前端模擬，協助規劃資料結構。</p>
+    <div className="posts-container">
+      <div className="filters-section">
+        <div className="filters-inline">
+          <div className="filter-group-inline">
+            <span className="filter-label">標籤：</span>
+            <div className="filter-buttons">
+              <button
+                type="button"
+                className={selectedTag === 'all' ? 'filter-btn active' : 'filter-btn'}
+                onClick={() => setSelectedTag('all')}
+              >
+                全部
+              </button>
+              {tagStats.map(({ tag, count }) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className={selectedTag === tag ? 'filter-btn active' : 'filter-btn'}
+                  onClick={() => setSelectedTag(tag)}
+                >
+                  {tag} <span className="count">({count})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="filter-group-inline">
+            <span className="filter-label">分類：</span>
+            <div className="filter-buttons">
+              <button
+                type="button"
+                className={selectedCategory === 'all' ? 'filter-btn active' : 'filter-btn'}
+                onClick={() => setSelectedCategory('all')}
+              >
+                全部
+              </button>
+              {categoryStats.map(({ category, count }) => (
+                <button
+                  key={category}
+                  type="button"
+                  className={selectedCategory === category ? 'filter-btn active' : 'filter-btn'}
+                  onClick={() => setSelectedCategory(category)}
+                >
+                  {category} <span className="count">({count})</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <FilterGroup
-          title="依標籤瀏覽"
-          items={tagStats.map(({ tag, count }) => ({ label: `${tag} (${count})`, value: tag }))}
-          activeValue={selectedTag}
-          onChange={setSelectedTag}
-          emptyText="目前沒有標籤資料"
-        />
-        <FilterGroup
-          title="依分類瀏覽"
-          items={categoryStats.map(({ category, count }) => ({
-            label: `${category} (${count})`,
-            value: category,
-          }))}
-          activeValue={selectedCategory}
-          onChange={setSelectedCategory}
-          emptyText="目前沒有分類資料"
-        />
-      </section>
+      </div>
 
-      <section className="pagination-bar">
-        <span>
+      {pagePosts.length === 0 ? (
+        <div className="empty-state">
+          <p>還沒有符合篩選條件的文章！試著切換標籤或分類看看。</p>
+        </div>
+      ) : (
+        <div className="posts-grid">
+          {pagePosts.map((post, index) => (
+            <article key={post.slug} className={`post-card-grid ${index === 0 ? 'featured' : ''}`}>
+              <div className="post-card-header">
+                <span className="post-number">{String(index + 1).padStart(2, '0')}</span>
+                <div className="post-header-content">
+                  <h2>
+                    <a href={`/posts/${post.slug}`}>{post.title}</a>
+                  </h2>
+                  <div className="post-meta-compact">
+                    <time dateTime={post.date.toISOString()}>
+                      {post.date.toLocaleDateString('zh-TW', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </time>
+                    {post.readingMinutes && <span> · {post.readingMinutes} 分鐘</span>}
+                  </div>
+                </div>
+              </div>
+              {post.summary && (
+                <p className="post-summary">{post.summary}</p>
+              )}
+              <div className="post-footer">
+                <div className="post-taxonomy-compact">
+                  <span className="post-category-badge">{post.category ?? '未分類'}</span>
+                  {post.tags.length > 0 && (
+                    <div className="tag-chips-compact">
+                      {post.tags.slice(0, 3).map((tag) => (
+                        <span key={tag} className="tag-chip-small">#{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <a href={`/posts/${post.slug}`} className="read-more">
+                  閱讀更多 →
+                </a>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <div className="pagination-section">
+        <div className="pagination-info">
           共 {filteredPosts.length} 篇 · 第 {page} / {totalPages} 頁
-        </span>
+        </div>
         <div className="pagination-controls">
           <button
             type="button"
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
             disabled={page === 1}
+            className="pagination-btn"
           >
             ← 上一頁
           </button>
@@ -96,95 +171,13 @@ export function PostList({ posts }: PostListProps) {
             type="button"
             onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={page === totalPages}
+            className="pagination-btn"
           >
             下一頁 →
           </button>
         </div>
-      </section>
-
-      {pagePosts.length === 0 ? (
-        <div className="empty-state">
-          <p>還沒有符合篩選條件的文章！試著切換標籤或分類看看。</p>
-        </div>
-      ) : null}
-
-      {pagePosts.map((post) => (
-        <article key={post.slug} className="post-card">
-          <h2>
-            <a href={`/posts/${post.slug}`}>{post.title}</a>
-          </h2>
-          <div className="post-meta">
-            <time dateTime={post.date.toISOString()}>
-              {post.date.toLocaleDateString('zh-TW', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })}
-            </time>
-            {post.readingMinutes ? ` · ${post.readingMinutes} 分鐘` : null}
-            <span className="updated-pill">
-              更新：{post.lastUpdated.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' })}
-            </span>
-          </div>
-          <div className="post-taxonomy">
-            <span className="post-category">分類：{post.category ?? '未分類'}</span>
-            {post.tags.length > 0 ? (
-              <div className="tag-chip-row">
-                {post.tags.map((tag) => (
-                  <span key={tag} className="tag-chip">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </div>
-          {post.summary ? <p>{post.summary}</p> : null}
-        </article>
-      ))}
+      </div>
     </div>
   );
 }
 
-interface FilterGroupProps {
-  title: string;
-  items: { label: string; value: string }[];
-  activeValue: string;
-  onChange: (value: string) => void;
-  emptyText: string;
-}
-
-function FilterGroup({ title, items, activeValue, onChange, emptyText }: FilterGroupProps) {
-  if (items.length === 0) {
-    return (
-      <section className="filter-group">
-        <h4>{title}</h4>
-        <p className="muted-text">{emptyText}</p>
-      </section>
-    );
-  }
-
-  return (
-    <section className="filter-group">
-      <h4>{title}</h4>
-      <div className="filter-pills">
-        <button
-          type="button"
-          className={activeValue === 'all' ? 'filter-pill is-active' : 'filter-pill'}
-          onClick={() => onChange('all')}
-        >
-          全部
-        </button>
-        {items.map((item) => (
-          <button
-            key={item.value}
-            type="button"
-            className={activeValue === item.value ? 'filter-pill is-active' : 'filter-pill'}
-            onClick={() => onChange(item.value)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}

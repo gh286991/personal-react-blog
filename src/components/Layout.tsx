@@ -12,22 +12,38 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
   return (
     <div className="site-shell">
       {variant === 'hero' ? (
-        <header className="site-hero">
-          <div className="hero-overlay" />
-          <div className="hero-content">
-            <p className="hero-eyebrow">Minimal SSR · Markdown · React 19</p>
-            <h1 className="hero-title">{title ?? 'My React SSR Blog'}</h1>
-            {description ? <p className="hero-subtitle">{description}</p> : null}
-            <div className="hero-actions">
-              <a className="hero-cta" href="#latest">
-                查看最新文章
+        <>
+          <nav className="site-nav">
+            <div className="nav-container">
+              <a href="/" className="nav-logo">
+                <span className="logo-text">Blog</span>
               </a>
-              <a className="hero-secondary" href="https://github.com/tomjhuang" target="_blank" rel="noreferrer">
-                GitHub 專案
-              </a>
+              <div className="nav-links">
+                <a href="/" className="nav-link">首頁</a>
+                <a href="#latest" className="nav-link">文章</a>
+                <a href="https://github.com/tomjhuang" target="_blank" rel="noreferrer" className="nav-link">
+                  GitHub
+                </a>
+              </div>
             </div>
-          </div>
-        </header>
+          </nav>
+          <header className="site-hero">
+            <div className="hero-overlay" />
+            <div className="hero-content">
+              <p className="hero-eyebrow">Minimal SSR · Markdown · React 19</p>
+              <h1 className="hero-title">{title ?? 'My React SSR Blog'}</h1>
+              {description ? <p className="hero-subtitle">{description}</p> : null}
+              <div className="hero-actions">
+                <a className="hero-cta" href="#latest">
+                  查看最新文章
+                </a>
+                <a className="hero-secondary" href="https://github.com/tomjhuang" target="_blank" rel="noreferrer">
+                  GitHub 專案
+                </a>
+              </div>
+            </div>
+          </header>
+        </>
       ) : (
         <header className="page-banner is-compact">
           <div>
@@ -41,32 +57,36 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
         </header>
       )}
       <main className="site-main" id="latest">
-        <div className="layout-grid">
-          <section className="content-column">{children}</section>
-          <aside className="site-sidebar">
-            <div className="sidebar-card">
-              <h4>關於這個部落格</h4>
-              <p>
-                專注在輕量級的 SSR、平行渲染與 Markdown 工作流程。所有內容皆以低記憶體環境為前提打造。
-              </p>
+        {variant === 'hero' ? (
+          <>
+            <div className="info-bar">
+              <div className="info-bar-content">
+                <div className="info-item">
+                  <span className="info-label">關於</span>
+                  <span className="info-text">輕量級 SSR · Markdown · React 19</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">分類</span>
+                  <div className="info-tags">
+                    <span>⚙️ 架構</span>
+                    <span>📝 產品</span>
+                    <span>🧪 實驗</span>
+                  </div>
+                </div>
+                <div className="info-item">
+                  <a href="/feed.xml" className="info-link">📡 RSS 訂閱</a>
+                </div>
+              </div>
             </div>
-            <div className="sidebar-card">
-              <h4>內容分類</h4>
-              <ul>
-                <li>⚙️ 架構筆記</li>
-                <li>📝 產品日誌</li>
-                <li>🧪 實驗/測試</li>
-              </ul>
+            <div className="content-wrapper">
+              {children}
             </div>
-            <div className="sidebar-card">
-              <h4>訂閱更新</h4>
-              <p>想收到新文章通知？把 RSS 新增到你的閱讀器。</p>
-              <a className="hero-cta is-small" href="/feed.xml">
-                RSS 訂閱
-              </a>
-            </div>
-          </aside>
-        </div>
+          </>
+        ) : (
+          <div className="content-wrapper content-wrapper-full">
+            {children}
+          </div>
+        )}
       </main>
       <footer className="site-footer">
         <span>© {currentYear} | Built with React, Vite & Bun</span>

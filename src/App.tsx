@@ -6,9 +6,9 @@ import { PostPage } from './components/PostPage';
 
 export function App({ page, posts, post }: AppProps) {
   const isList = page === 'list';
-  const pageTitle = isList ? '我的極簡 React 部落格' : post?.title ?? '文章未找到';
+  const pageTitle = isList ? '技術思考與實踐分享' : post?.title ?? '文章未找到';
   const description = isList
-    ? '用 React + Express 打造的 Markdown SSR 部落格'
+    ? '分享前端架構、效能優化與開發實踐的深度思考'
     : post?.summary ?? '找不到文章內容';
 
   return (

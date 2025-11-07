@@ -6,7 +6,7 @@ interface PostPageProps {
 
 export function PostPage({ post }: PostPageProps) {
   return (
-    <article className="post-card">
+    <article className="post-card post-page">
       <a href="/" className="back-link" aria-label="返回文章列表">
         ← 返回文章列表
       </a>
