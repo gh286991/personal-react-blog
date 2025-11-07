@@ -1,10 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
-import { marked } from 'marked';
 
 const CONTENT_BASE = process.env.CONTENT_BASE ?? process.cwd();
 const POSTS_DIR = path.join(CONTENT_BASE, 'posts');
+
+// LRU 快取最大大小（只快取 HTML 內容）
+const MAX_HTML_CACHE_SIZE = 3;
 
 export interface PostSummary {
   slug: string;
@@ -21,19 +23,36 @@ export interface Post extends PostSummary {
   contentHtml: string;
 }
 
-interface CacheEntry {
+interface SummaryCacheEntry {
   mtimeMs: number;
   summary: PostSummary;
-  contentHtml?: string;
 }
 
-const contentCache = new Map<string, CacheEntry>();
+interface HtmlCacheEntry {
+  mtimeMs: number;
+  contentHtml: string;
+  lastAccessed: number;
+}
 
-function parseMarkdown(filePath: string, slug: string): CacheEntry {
+// 分離快取：summary 快取（永久，用於列表頁）和 HTML 快取（LRU，用於詳情頁）
+const summaryCache = new Map<string, SummaryCacheEntry>();
+const htmlCache = new Map<string, HtmlCacheEntry>();
+
+// 動態載入 marked（只在需要時載入）
+let markedModule: typeof import('marked') | null = null;
+
+async function getMarked() {
+  if (!markedModule) {
+    markedModule = await import('marked');
+  }
+  return markedModule;
+}
+
+function parseMarkdownSummary(filePath: string, slug: string): PostSummary {
   const stat = fs.statSync(filePath);
-  const cached = contentCache.get(slug);
+  const cached = summaryCache.get(slug);
   if (cached && cached.mtimeMs === stat.mtimeMs) {
-    return cached;
+    return cached.summary;
   }
 
   const raw = fs.readFileSync(filePath, 'utf8');
@@ -46,16 +65,51 @@ function parseMarkdown(filePath: string, slug: string): CacheEntry {
   const tags = normalizeTags(data.tags);
   const category = normalizeCategory(data.category);
   const lastUpdated = normalizeUpdatedDate(data.updated ?? data.lastUpdated, stat.mtime);
-  const contentHtml = marked.parse(content) as string;
 
-  const entry: CacheEntry = {
-    mtimeMs: stat.mtimeMs,
-    summary: { slug, title, date, lastUpdated, summary, readingMinutes, tags, category },
-    contentHtml,
+  const postSummary: PostSummary = {
+    slug,
+    title,
+    date,
+    lastUpdated,
+    summary,
+    readingMinutes,
+    tags,
+    category,
   };
 
-  contentCache.set(slug, entry);
-  return entry;
+  summaryCache.set(slug, { mtimeMs: stat.mtimeMs, summary: postSummary });
+  return postSummary;
+}
+
+async function parseMarkdownHtml(filePath: string, slug: string): Promise<string> {
+  const stat = fs.statSync(filePath);
+  const cached = htmlCache.get(slug);
+  if (cached && cached.mtimeMs === stat.mtimeMs) {
+    // 更新最後訪問時間（LRU）
+    cached.lastAccessed = Date.now();
+    return cached.contentHtml;
+  }
+
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const { content } = matter(raw);
+  const marked = await getMarked();
+  const contentHtml = marked.marked.parse(content) as string;
+
+  // LRU 快取：如果超過最大大小，移除最舊的
+  if (htmlCache.size >= MAX_HTML_CACHE_SIZE) {
+    const entries = Array.from(htmlCache.entries());
+    entries.sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
+    const oldestKey = entries[0][0];
+    htmlCache.delete(oldestKey);
+  }
+
+  htmlCache.set(slug, {
+    mtimeMs: stat.mtimeMs,
+    contentHtml,
+    lastAccessed: Date.now(),
+  });
+
+  return contentHtml;
 }
 
 function normalizeTags(raw: unknown): string[] {
@@ -107,8 +161,7 @@ export function loadPostSummaries(): PostSummary[] {
       const slug = path.basename(file, '.md');
       const fullPath = path.join(POSTS_DIR, file);
       try {
-        const entry = parseMarkdown(fullPath, slug);
-        return entry.summary;
+        return parseMarkdownSummary(fullPath, slug);
       } catch (error) {
         console.error(`[content] Failed to parse ${file}:`, error);
         return null;
@@ -120,15 +173,17 @@ export function loadPostSummaries(): PostSummary[] {
   return summaries;
 }
 
-export function loadPost(slug: string): Post | null {
+export async function loadPost(slug: string): Promise<Post | null> {
   const filePath = path.join(POSTS_DIR, `${slug}.md`);
   if (!fs.existsSync(filePath)) {
     return null;
   }
 
   try {
-    const entry = parseMarkdown(filePath, slug);
-    return { ...entry.summary, contentHtml: entry.contentHtml ?? '' };
+    const summary = parseMarkdownSummary(filePath, slug);
+    // 只在需要時才生成 HTML（延遲載入）
+    const contentHtml = await parseMarkdownHtml(filePath, slug);
+    return { ...summary, contentHtml };
   } catch (error) {
     console.error(`[content] Failed to read post ${slug}:`, error);
     return null;

@@ -14,6 +14,13 @@ const POSTS_DIR = path.resolve(ROOT, 'posts');
 
 async function createServer() {
   const app = express();
+  
+  // 優化 Express 配置：禁用不必要的功能以減少記憶體使用
+  app.disable('x-powered-by');
+  app.disable('etag');
+  app.set('trust proxy', false);
+  app.set('view cache', false);
+  
   let vite: ViteDevServer | undefined;
   let template: string = '';
   let serverRender:
@@ -39,11 +46,21 @@ async function createServer() {
     // Convert to file:// URL for proper ES module resolution
     const entryServerUrl = pathToFileURL(entryServerPath).href;
     serverRender = (await import(entryServerUrl)).render;
+    // 優化靜態文件服務：減少緩衝區大小，禁用索引
     app.use(
       '/assets',
-      express.static(resolve('dist/client/assets'), { maxAge: '1y' }),
+      express.static(resolve('dist/client/assets'), {
+        maxAge: '1y',
+        etag: false,
+        lastModified: false,
+        index: false,
+      }),
     );
-    app.use(express.static(resolve('dist/client'), { index: false }));
+    app.use(express.static(resolve('dist/client'), {
+      index: false,
+      etag: false,
+      lastModified: false,
+    }));
   }
 
   app.get('/', async (req, res) => {
@@ -52,7 +69,7 @@ async function createServer() {
   });
 
   app.get('/posts/:slug', async (req, res) => {
-    const post = loadPost(req.params.slug);
+    const post = await loadPost(req.params.slug);
     if (!post) {
       const props: AppProps = {
         page: 'not-found',
@@ -145,6 +162,19 @@ function resolve(p: string) {
 }
 
 async function start() {
+  // 優化記憶體使用：強制垃圾回收（如果可用）
+  const gc = (global as { gc?: () => void }).gc;
+  if (gc && typeof gc === 'function') {
+    // 定期執行垃圾回收以釋放記憶體
+    setInterval(() => {
+      try {
+        gc();
+      } catch (e) {
+        // 忽略錯誤
+      }
+    }, 30000); // 每 30 秒執行一次
+  }
+  
   const app = await createServer();
   app.listen(PORT, () => {
     console.log(`✅ React SSR blog running on http://localhost:${PORT}`);
