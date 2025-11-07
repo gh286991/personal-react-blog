@@ -10,8 +10,11 @@ export interface PostSummary {
   slug: string;
   title: string;
   date: Date;
+  lastUpdated: Date;
   summary?: string;
   readingMinutes?: number;
+  tags: string[];
+  category: string;
 }
 
 export interface Post extends PostSummary {
@@ -40,16 +43,53 @@ function parseMarkdown(filePath: string, slug: string): CacheEntry {
   const summary = data.summary ?? content.replace(/[#>*_`-]/g, '').slice(0, 140).trim();
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const readingMinutes = Math.max(1, Math.round(wordCount / 250));
+  const tags = normalizeTags(data.tags);
+  const category = normalizeCategory(data.category);
+  const lastUpdated = normalizeUpdatedDate(data.updated ?? data.lastUpdated, stat.mtime);
   const contentHtml = marked.parse(content) as string;
 
   const entry: CacheEntry = {
     mtimeMs: stat.mtimeMs,
-    summary: { slug, title, date, summary, readingMinutes },
+    summary: { slug, title, date, lastUpdated, summary, readingMinutes, tags, category },
     contentHtml,
   };
 
   contentCache.set(slug, entry);
   return entry;
+}
+
+function normalizeTags(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .map((tag) => String(tag).trim())
+      .filter((tag) => tag.length > 0)
+      .slice(0, 8);
+  }
+  if (typeof raw === 'string') {
+    return raw
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0)
+      .slice(0, 8);
+  }
+  return [];
+}
+
+function normalizeCategory(raw: unknown): string {
+  if (typeof raw === 'string' && raw.trim().length > 0) {
+    return raw.trim();
+  }
+  return '未分類';
+}
+
+function normalizeUpdatedDate(raw: unknown, fallback: Date): Date {
+  if (typeof raw === 'string' && raw.trim().length > 0) {
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  return fallback;
 }
 
 export function loadPostSummaries(): PostSummary[] {

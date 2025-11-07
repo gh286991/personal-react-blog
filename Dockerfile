@@ -1,0 +1,40 @@
+### Build stage: use Bun for building (smaller and faster)
+FROM oven/bun:1.1.22 AS builder
+WORKDIR /app
+
+# Copy package files first for better layer caching
+COPY package.json package-lock.json ./
+
+# Install all dependencies using Bun (faster than npm)
+RUN bun install --frozen-lockfile
+
+# Copy only necessary files for build
+COPY tsconfig*.json vite.config.ts ./
+COPY src ./src
+COPY scripts ./scripts
+COPY posts ./posts
+COPY index.html ./
+
+# Build the application
+RUN bun run build
+
+# Remove dev dependencies and clean up
+RUN bun install --production --frozen-lockfile && \
+    rm -rf /tmp/* /var/tmp/*
+
+### Runtime stage: minimal bun slim runtime
+FROM oven/bun:1.1.22-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    CONTENT_BASE=/app/dist \
+    PORT=3000
+
+# Copy only production dependencies and built files
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 3000
+
+CMD ["bun", "dist/server/server.js"]

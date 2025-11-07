@@ -12,7 +12,7 @@ export function App({ page, posts, post }: AppProps) {
     : post?.summary ?? '找不到文章內容';
 
   return (
-    <Layout title={pageTitle} description={description}>
+    <Layout title={pageTitle} description={description} variant={isList ? 'hero' : 'minimal'}>
       {isList && <PostList posts={posts} />}
       {!isList && post && <PostPage post={post} />}
       {!isList && !post && <p>找不到文章，請回到首頁。</p>}

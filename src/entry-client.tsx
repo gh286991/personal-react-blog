@@ -14,8 +14,14 @@ function reviveDate(value: Date | string) {
 }
 
 function reviveInitialData(props: AppProps): AppProps {
-  const posts = props.posts.map((post) => ({ ...post, date: reviveDate(post.date) }));
-  const post = props.post ? { ...props.post, date: reviveDate(props.post.date) } : props.post;
+  const posts = props.posts.map((post) => ({
+    ...post,
+    date: reviveDate(post.date),
+    lastUpdated: reviveDate(post.lastUpdated),
+  }));
+  const post = props.post
+    ? { ...props.post, date: reviveDate(props.post.date), lastUpdated: reviveDate(props.post.lastUpdated) }
+    : props.post;
   return { ...props, posts, post };
 }
 

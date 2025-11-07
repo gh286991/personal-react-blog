@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import express from 'express';
 import type { ViteDevServer } from 'vite';
 
@@ -29,7 +30,15 @@ async function createServer() {
     setupMarkdownHMR(vite);
   } else {
     template = fs.readFileSync(resolve('dist/client/index.html'), 'utf-8');
-    serverRender = (await import(resolve('dist/server/entry-server.js'))).render;
+    // Use absolute path and convert to file:// URL for ES module import
+    const entryServerPath = path.resolve(ROOT, 'dist/server/entry-server.mjs');
+    // Verify file exists before importing
+    if (!fs.existsSync(entryServerPath)) {
+      throw new Error(`Entry server file not found: ${entryServerPath}`);
+    }
+    // Convert to file:// URL for proper ES module resolution
+    const entryServerUrl = pathToFileURL(entryServerPath).href;
+    serverRender = (await import(entryServerUrl)).render;
     app.use(
       '/assets',
       express.static(resolve('dist/client/assets'), { maxAge: '1y' }),

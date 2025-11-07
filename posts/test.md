@@ -2,6 +2,11 @@
 title: "XXX"
 date: "2024-04-20"
 summary: "Expresㄑsdfdfds、React 18、esbuild。"
+category: "測試文章"
+tags:
+  - 測試
+  - Demo
+updated: "2024-04-25"
 ---
 
 為了降低記憶體使用，我挑了幾個原則：
