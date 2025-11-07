@@ -1,0 +1,43 @@
+{
+  "name": "personal-react-blog",
+  "version": "1.0.0",
+  "description": "Minimal React SSR blog powered by Markdown posts.",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "tsx watch src/server.ts",
+    "dev:client": "esbuild src/client.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --define:process.env.NODE_ENV=\\\"development\\\" --outfile=public/client.js --watch",
+    "clean": "node scripts/clean-dist.mjs",
+    "build:server": "tsc --project tsconfig.json",
+    "build:client": "esbuild src/client.tsx --bundle --format=iife --platform=browser --target=es2018 --minify --define:process.env.NODE_ENV=\\\"production\\\" --outfile=dist/public/client.js",
+    "copy:static": "node scripts/copy-static.mjs",
+    "build": "npm run clean && npm run build:server && npm run build:client && npm run copy:static",
+    "start": "NODE_ENV=production CONTENT_BASE=dist node dist/server.js"
+  },
+  "keywords": [
+    "react",
+    "ssr",
+    "markdown",
+    "blog"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.1.0",
+    "gray-matter": "^4.0.3",
+    "marked": "^16.4.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.25.12",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
