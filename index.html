@@ -5,7 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>%APP_TITLE%</title>
     <meta name="description" content="%APP_DESCRIPTION%" />
-    <link rel="stylesheet" href="/src/styles.css" />
+    <link rel="stylesheet" href="/src/styles.scss" />
+    <script>
+      // 在頁面載入前立即設置主題，避免閃爍
+      (function() {
+        try {
+          const savedTheme = localStorage.getItem('theme');
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          
+          // 如果用戶明確選擇了主題，使用用戶選擇；否則跟隨系統設定
+          const shouldBeDark = savedTheme === 'dark' || (savedTheme !== 'light' && prefersDark);
+          
+          if (shouldBeDark) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          // 如果 localStorage 不可用，使用系統設定
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (prefersDark) {
+            document.documentElement.classList.add('dark');
+          }
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"><!--app-html--></div>

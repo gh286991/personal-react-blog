@@ -9,6 +9,32 @@ declare global {
   }
 }
 
+// 初始化主題（在 React hydration 之前執行，避免閃爍）
+function initTheme() {
+  try {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // 如果用戶明確選擇了主題，使用用戶選擇；否則跟隨系統設定
+    const shouldBeDark = savedTheme === 'dark' || (savedTheme !== 'light' && prefersDark);
+    
+    if (shouldBeDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  } catch (e) {
+    // 如果 localStorage 不可用，使用系統設定
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) {
+      document.documentElement.classList.add('dark');
+    }
+  }
+}
+
+// 立即執行主題初始化
+initTheme();
+
 function reviveDate(value: Date | string) {
   return value instanceof Date ? value : new Date(value);
 }

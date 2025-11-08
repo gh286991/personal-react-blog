@@ -40,10 +40,10 @@ let args = [];
 if (MODE === 'dev') {
   if (shouldUseBun) {
     command = 'bun';
-    args = ['--watch', 'src/server.ts'];
+    args = ['--watch', 'src/server/server.ts'];
   } else {
     command = binPath('tsx');
-    args = ['src/server.ts'];
+    args = ['src/server/server.ts'];
   }
 } else {
   if (shouldUseBun) {
@@ -64,7 +64,7 @@ child.on('error', (error) => {
   if (shouldUseBun) {
     console.error(`[dev] Failed to start bun (${error.message}). Falling back to Node.`);
     if (MODE === 'dev') {
-      spawn(binPath('tsx'), ['src/server.ts'], { stdio: 'inherit', env });
+      spawn(binPath('tsx'), ['src/server/server.ts'], { stdio: 'inherit', env });
     } else {
       spawn('node', ['dist/server/server.js'], { stdio: 'inherit', env });
     }

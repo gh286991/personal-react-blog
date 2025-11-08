@@ -1,8 +1,8 @@
 import type { Post } from './content';
 import type { AppProps } from './types';
-import { Layout } from './components/Layout';
-import { PostList } from './components/PostList';
-import { PostPage } from './components/PostPage';
+import { Layout } from './page/Layout';
+import { PostList } from './page/PostList';
+import { PostPage } from './page/PostPage';
 
 export function App({ page, posts, post }: AppProps) {
   const isList = page === 'list';

@@ -1,12 +1,11 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist/server",
+    "outDir": "./dist",
     "module": "commonjs",
     "target": "es2020",
-    "rootDir": "./src",
     "sourceMap": false
   },
-  "include": ["src/server.ts", "src/content.ts", "src/types.ts"],
-  "exclude": ["src/entry-client.tsx", "src/entry-server.tsx"]
+  "include": ["src/server/server.ts", "src/content.ts", "src/types.ts", "src/security/**/*.ts"],
+  "exclude": ["src/entry-client.tsx", "src/server/entry-server.tsx"]
 }

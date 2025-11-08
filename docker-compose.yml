@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  blog:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: personal-react-blog
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - CONTENT_BASE=/app/dist
+      - PORT=3000
+      # 記憶體優化設定
+      - BUN_JSC_forceGCSlowPaths=true
+      - BUN_JSC_useJIT=false
+    restart: unless-stopped
+    # 資源限制（可選，用於低記憶體環境）
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    # 健康檢查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

@@ -1,0 +1,482 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+// ========================================
+// 🎨 設計系統 - 顏色常數
+// ========================================
+
+// 主色調
+$color-primary: #2563eb;          // 主要藍色
+$color-primary-light: #3b82f6;
+$color-primary-dark: #1e40af;
+$color-primary-darker: #1e3a8a;
+
+// 強調色
+$color-accent: #d4af37;           // 金色
+$color-accent-light: #f4d03f;
+$color-accent-dark: #b8a082;
+
+// 淺色模式
+$bg-light: #f8fafc;               // 主背景（更深的灰白）
+$bg-light-secondary: #f1f5f9;     // 次要背景
+$bg-light-card: #ffffff;          // 卡片背景
+$text-light-primary: #0f172a;     // 主要文字（更深）
+$text-light-secondary: #334155;   // 次要文字
+$text-light-muted: #64748b;       // 弱化文字
+$border-light: #e2e8f0;           // 邊框
+
+// 深色模式
+$bg-dark: #0f172a;                // 主背景
+$bg-dark-secondary: #1e293b;      // 次要背景
+$bg-dark-card: #1e293b;           // 卡片背景
+$text-dark-primary: #f1f5f9;      // 主要文字
+$text-dark-secondary: #cbd5e1;    // 次要文字
+$text-dark-muted: #94a3b8;        // 弱化文字
+$border-dark: #334155;            // 邊框
+
+// 玻璃態效果
+$glass-light: rgba(255, 255, 255, 0.85);
+$glass-dark: rgba(30, 41, 59, 0.85);
+
+// 陰影
+$shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.08);
+$shadow-md: 0 4px 16px rgba(15, 23, 42, 0.12);
+$shadow-lg: 0 8px 32px rgba(15, 23, 42, 0.16);
+$shadow-xl: 0 16px 48px rgba(15, 23, 42, 0.20);
+
+// 深色模式陰影
+$shadow-dark-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+$shadow-dark-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+$shadow-dark-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+$shadow-dark-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+
+// ========================================
+// 📝 字體系統
+// ========================================
+
+// 字體家族
+$font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-serif: 'Georgia', 'Times New Roman', 'Times', serif;
+$font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+
+// 字體權重
+$font-normal: 400;
+$font-medium: 500;
+$font-semibold: 600;
+$font-bold: 700;
+
+// ========================================
+// ⚡ 動畫與過渡
+// ========================================
+
+$transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+$transition-fast: 200ms;
+$transition-normal: 300ms;
+$transition-slow: 500ms;
+
+// Base layer customizations
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    position: relative;
+    
+    // 使用 Sans-serif 作為主要字體（UI 元素）
+    font-family: $font-sans;
+    font-weight: $font-normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    
+    // 顏色 - 使用 SCSS 常數
+    background-color: $bg-light;
+    color: $text-light-primary;
+    
+    transition: background-color $transition-normal $transition-smooth,
+                color $transition-normal $transition-smooth;
+    
+    .dark & {
+      background-color: $bg-dark;
+      color: $text-dark-primary;
+    }
+    
+    // 背景裝飾效果
+    &::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: 
+        radial-gradient(circle at 10% 20%, rgba($color-primary, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba($color-accent, 0.03) 0%, transparent 40%);
+      animation: float 20s ease-in-out infinite;
+      
+      .dark & {
+        background: 
+          radial-gradient(circle at 10% 20%, rgba($color-primary, 0.06) 0%, transparent 40%),
+          radial-gradient(circle at 90% 80%, rgba($color-accent-light, 0.04) 0%, transparent 40%);
+      }
+    }
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  // 自定義滾動條
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: $bg-light-secondary;
+    
+    .dark & {
+      background: $bg-dark-secondary;
+    }
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: $color-primary;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    
+    &:hover {
+      background: $color-primary-light;
+    }
+    
+    .dark &:hover {
+      background: $color-primary-dark;
+    }
+  }
+
+  // Firefox 滾動條
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: $color-primary $bg-light-secondary;
+    
+    .dark & {
+      scrollbar-color: $color-primary-light $bg-dark-secondary;
+    }
+  }
+
+  // 選擇文字樣式
+  ::selection {
+    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    color: white;
+  }
+}
+
+// Component layer customizations
+@layer components {
+  // 文章內容樣式（使用 Serif 字體以獲得更好的閱讀體驗）
+  .prose-custom {
+    max-width: none;
+    font-family: $font-serif;
+    color: $text-light-secondary;
+    line-height: 1.8;
+    
+    .dark & {
+      color: $text-dark-secondary;
+    }
+    
+    // 標題使用 Sans-serif 以保持清晰
+    h1, h2, h3, h4 {
+      font-family: $font-sans;
+      font-weight: $font-bold;
+      color: $text-light-primary;
+      margin-top: 2.5rem;
+      margin-bottom: 1.25rem;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+      
+      .dark & {
+        color: $text-dark-primary;
+      }
+    }
+    
+    h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      border-bottom: 2px solid $border-light;
+      padding-bottom: 1rem;
+      
+      .dark & {
+        border-bottom-color: $border-dark;
+      }
+    }
+    
+    h2 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      border-bottom: 1px solid $border-light;
+      padding-bottom: 0.75rem;
+      
+      .dark & {
+        border-bottom-color: $border-dark;
+      }
+    }
+    
+    h3 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+    }
+    
+    h4 {
+      font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      font-size: 1.125rem;
+      line-height: 1.8;
+      text-align: justify;
+    }
+    
+    a {
+      color: $color-primary;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      transition: color $transition-fast $transition-smooth;
+      
+      .dark & {
+        color: $color-primary-light;
+      }
+      
+      &:hover {
+        color: $color-primary-dark;
+        
+        .dark & {
+          color: $color-accent-light;
+        }
+      }
+    }
+    
+    // Inline code
+    code {
+      font-family: $font-mono;
+      font-size: 0.9em;
+      font-weight: $font-medium;
+      background: lighten($color-primary, 45%);
+      color: $color-primary-dark;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid lighten($color-primary, 35%);
+      box-shadow: $shadow-sm;
+      
+      .dark & {
+        background: rgba($color-primary, 0.15);
+        color: $color-primary-light;
+        border-color: rgba($color-primary, 0.3);
+        box-shadow: $shadow-dark-sm;
+      }
+    }
+    
+    // Code blocks
+    pre {
+      font-family: $font-mono;
+      background: $bg-light-card;
+      border: 1px solid $border-light;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      overflow-x: auto;
+      box-shadow: $shadow-lg;
+      position: relative;
+      
+      .dark & {
+        background: $bg-dark-card;
+        border-color: $border-dark;
+        box-shadow: $shadow-dark-lg;
+      }
+      
+      // 漸變頂部裝飾條
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, $color-primary, $color-accent, $color-primary);
+        opacity: 0.7;
+      }
+      
+      code {
+        background: transparent;
+        border: none;
+        padding: 0;
+        box-shadow: none;
+        color: $text-light-secondary;
+        font-weight: $font-normal;
+        
+        .dark & {
+          color: $text-dark-secondary;
+        }
+      }
+    }
+    
+    // Blockquote
+    blockquote {
+      position: relative;
+      margin: 2rem 0;
+      padding: 1.5rem 2rem;
+      padding-left: 3rem;
+      background: $bg-light-card;
+      border-left: 4px solid $color-primary;
+      border-radius: 0 12px 12px 0;
+      font-style: italic;
+      font-size: 1.125rem;
+      line-height: 1.75;
+      color: $text-light-muted;
+      box-shadow: $shadow-sm;
+      
+      .dark & {
+        background: $bg-dark-card;
+        color: $text-dark-muted;
+        box-shadow: $shadow-dark-sm;
+      }
+      
+      // 引號裝飾
+      &::before {
+        content: '"';
+        position: absolute;
+        left: 1rem;
+        top: 1rem;
+        font-size: 4rem;
+        line-height: 1;
+        font-family: $font-serif;
+        font-weight: $font-bold;
+        opacity: 0.2;
+        background: linear-gradient(135deg, $color-primary, $color-primary-darker);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+    }
+    
+    // Lists
+    ul, ol {
+      margin: 1.5rem 0;
+      padding-left: 2rem;
+      
+      li {
+        margin-bottom: 0.75rem;
+        line-height: 1.75;
+      }
+    }
+    
+    ul {
+      list-style-type: disc;
+      
+      li::marker {
+        color: $color-primary;
+      }
+    }
+    
+    ol {
+      list-style-type: decimal;
+      
+      li::marker {
+        color: $color-primary;
+        font-weight: $font-semibold;
+      }
+    }
+  }
+
+  // ========================================
+  // 🪟 玻璃態效果
+  // ========================================
+  .glass {
+    background: $glass-light;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: $shadow-md;
+    
+    .dark & {
+      background: $glass-dark;
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: $shadow-dark-md;
+    }
+  }
+
+  // ========================================
+  // 🎨 漸變工具類
+  // ========================================
+  
+  // 漸變文字
+  .gradient-text {
+    background: linear-gradient(135deg, $color-primary, $color-primary-darker);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    .dark & {
+      background: linear-gradient(135deg, $color-primary-light, $color-accent-light);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  }
+
+  // 漸變邊框
+  .gradient-border {
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, $color-primary, $color-accent, $color-primary);
+      opacity: 0.7;
+    }
+  }
+  
+  // 漸變背景按鈕
+  .gradient-bg {
+    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    transition: all $transition-normal $transition-smooth;
+    
+    &:hover {
+      background: linear-gradient(135deg, $color-primary-light, $color-primary);
+      transform: translateY(-2px);
+      box-shadow: $shadow-lg, 0 0 30px rgba($color-primary, 0.3);
+    }
+  }
+}
+
+// Utility layer additions
+@layer utilities {
+  .animation-delay-100 {
+    animation-delay: 0.1s;
+  }
+  
+  .animation-delay-200 {
+    animation-delay: 0.2s;
+  }
+  
+  .animation-delay-300 {
+    animation-delay: 0.3s;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 0.4s;
+  }
+  
+  .animation-delay-500 {
+    animation-delay: 0.5s;
+  }
+  
+  .animation-delay-600 {
+    animation-delay: 0.6s;
+  }
+}
+

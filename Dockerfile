@@ -10,6 +10,7 @@ RUN bun install
 
 # Copy only necessary files for build
 COPY tsconfig*.json vite.config.ts ./
+COPY tailwind.config.js postcss.config.js ./
 COPY src ./src
 COPY scripts ./scripts
 COPY posts ./posts
@@ -17,6 +18,14 @@ COPY index.html ./
 
 # Build the application
 RUN bun run build
+
+# Debug: List build output
+RUN echo "=== Build output ===" && \
+    ls -la dist/ && \
+    echo "=== Server files ===" && \
+    ls -la dist/server/ && \
+    echo "=== All JS files ===" && \
+    find dist -name "*.js" -o -name "*.mjs" | head -20
 
 # Remove dev dependencies and clean up
 RUN bun install --production && \
