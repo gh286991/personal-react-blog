@@ -14,15 +14,15 @@ function reviveDate(value: Date | string) {
 }
 
 function reviveInitialData(props: AppProps): AppProps {
-  const posts = props.posts.map((post) => ({
-    ...post,
-    date: reviveDate(post.date),
-    lastUpdated: reviveDate(post.lastUpdated),
-  }));
-  const post = props.post
-    ? { ...props.post, date: reviveDate(props.post.date), lastUpdated: reviveDate(props.post.lastUpdated) }
-    : props.post;
-  return { ...props, posts, post };
+  for (const post of props.posts) {
+    post.date = reviveDate(post.date);
+    post.lastUpdated = reviveDate(post.lastUpdated);
+  }
+  if (props.post) {
+    props.post.date = reviveDate(props.post.date);
+    props.post.lastUpdated = reviveDate(props.post.lastUpdated);
+  }
+  return props;
 }
 
 const container = document.getElementById('root');

@@ -1,12 +1,32 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import matter from 'gray-matter';
+import type { GrayMatterFile } from 'gray-matter';
+import { sanitizeMarkdownHtml, sanitizePlainText, sanitizeSlug } from './security/contentSanitizers';
+
+// 動態載入 gray-matter（只在需要時載入）
+type MatterFunction = (input: string) => GrayMatterFile<string>;
+let matterModule: MatterFunction | null = null;
+
+async function getMatter(): Promise<MatterFunction> {
+  if (!matterModule) {
+    const mod = await import('gray-matter');
+    // gray-matter 是 CommonJS 模組，可能是 default 或直接導出
+    matterModule = (mod.default ?? mod) as MatterFunction;
+  }
+  return matterModule;
+}
 
 const CONTENT_BASE = process.env.CONTENT_BASE ?? process.cwd();
-const POSTS_DIR = path.join(CONTENT_BASE, 'posts');
+const POSTS_DIR = path.resolve(CONTENT_BASE, 'posts');
+const DEFAULT_MAX_HTML_CACHE_SIZE = 2; // 降低預設 HTML 快取大小
+const DEFAULT_SUMMARY_CACHE_SIZE = 50; // 降低預設摘要快取大小（從 200 降到 50）
+const LOW_MEMORY_MODE = String(process.env.LOW_MEMORY_MODE ?? '').toLowerCase() === 'true';
 
-// LRU 快取最大大小（只快取 HTML 內容）
-const MAX_HTML_CACHE_SIZE = 3;
+const MAX_HTML_CACHE_SIZE = LOW_MEMORY_MODE ? 0 : resolveHtmlCacheSize();
+const SUMMARY_CACHE_MAX_SIZE = LOW_MEMORY_MODE ? 0 : resolveSummaryCacheSize();
+const HTML_CACHE_ENABLED = !LOW_MEMORY_MODE && MAX_HTML_CACHE_SIZE > 0;
+const SUMMARY_CACHE_ENABLED = !LOW_MEMORY_MODE && SUMMARY_CACHE_MAX_SIZE > 0;
+export const isLowMemoryMode = LOW_MEMORY_MODE;
 
 export interface PostSummary {
   slug: string;
@@ -34,11 +54,70 @@ interface HtmlCacheEntry {
   lastAccessed: number;
 }
 
-// 分離快取：summary 快取（永久，用於列表頁）和 HTML 快取（LRU，用於詳情頁）
+interface ParsedPostFile {
+  stat: fs.Stats;
+  matterFile: GrayMatterFile<string>;
+}
+
+// 分離快取：summary 快取（LRU，用於列表頁）和 HTML 快取（LRU，用於詳情頁）
 const summaryCache = new Map<string, SummaryCacheEntry>();
 const htmlCache = new Map<string, HtmlCacheEntry>();
 
-// 動態載入 marked（只在需要時載入）
+async function readParsedPost(filePath: string): Promise<ParsedPostFile> {
+  // 優化：使用 statSync 和 readFileSync（同步但更高效，且檔案通常不大）
+  // 對於小檔案，同步讀取比非同步更節省記憶體（避免 Promise 開銷）
+  const stat = fs.statSync(filePath);
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const matter = await getMatter();
+  const matterFile = matter(raw);
+  return { stat, matterFile };
+}
+
+function getCachedSummary(slug: string, mtimeMs: number): PostSummary | null {
+  if (!SUMMARY_CACHE_ENABLED) {
+    return null;
+  }
+  const cached = summaryCache.get(slug);
+  if (!cached || cached.mtimeMs !== mtimeMs) {
+    if (cached && cached.mtimeMs !== mtimeMs) {
+      summaryCache.delete(slug);
+    }
+    return null;
+  }
+  // 優化：只在快取接近上限時才移動到最前面（減少操作）
+  if (summaryCache.size > SUMMARY_CACHE_MAX_SIZE * 0.8) {
+    summaryCache.delete(slug);
+    summaryCache.set(slug, cached);
+  }
+  return cached.summary;
+}
+
+function setCachedSummary(slug: string, entry: SummaryCacheEntry) {
+  if (!SUMMARY_CACHE_ENABLED) {
+    return;
+  }
+  if (summaryCache.has(slug)) {
+    summaryCache.delete(slug);
+  }
+  summaryCache.set(slug, entry);
+  enforceSummaryCacheLimit();
+}
+
+function enforceSummaryCacheLimit() {
+  if (!SUMMARY_CACHE_ENABLED) {
+    summaryCache.clear();
+    return;
+  }
+  while (summaryCache.size > SUMMARY_CACHE_MAX_SIZE) {
+    const oldestKey = summaryCache.keys().next().value;
+    if (oldestKey === undefined) {
+      break;
+    }
+    summaryCache.delete(oldestKey);
+  }
+}
+
+// 動態載入第三方套件（只在需要時載入）
 let markedModule: typeof import('marked') | null = null;
 
 async function getMarked() {
@@ -48,25 +127,104 @@ async function getMarked() {
   return markedModule;
 }
 
-function parseMarkdownSummary(filePath: string, slug: string): PostSummary {
-  const stat = fs.statSync(filePath);
-  const cached = summaryCache.get(slug);
-  if (cached && cached.mtimeMs === stat.mtimeMs) {
-    return cached.summary;
+function resolvePostFilePath(safeSlug: string): string | null {
+  const candidate = path.resolve(POSTS_DIR, `${safeSlug}.md`);
+  const relative = path.relative(POSTS_DIR, candidate);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    return null;
+  }
+  return candidate;
+}
+
+function resolveHtmlCacheSize(): number {
+  const raw = process.env.MAX_HTML_CACHE_SIZE;
+  if (!raw) {
+    return DEFAULT_MAX_HTML_CACHE_SIZE;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return DEFAULT_MAX_HTML_CACHE_SIZE;
+  }
+  // 防止設定過大造成記憶體壓力（可視需要調整上限）
+  return Math.min(parsed, 50);
+}
+
+function resolveSummaryCacheSize(): number {
+  const raw = process.env.MAX_SUMMARY_CACHE_SIZE;
+  if (!raw) {
+    return DEFAULT_SUMMARY_CACHE_SIZE;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return DEFAULT_SUMMARY_CACHE_SIZE;
+  }
+  return Math.min(parsed, 1000);
+}
+
+function logContentError(message: string, error?: unknown) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.error(message, error);
+    return;
+  }
+  const detail = error instanceof Error ? error.message : undefined;
+  console.error(detail ? `${message}: ${detail}` : message);
+}
+
+async function parseMarkdownSummary(filePath: string, slug: string): Promise<PostSummary> {
+  return parseMarkdownSummaryInternal(filePath, slug);
+}
+
+async function parseMarkdownHtml(filePath: string, slug: string): Promise<string> {
+  return parseMarkdownHtmlInternal(filePath, slug);
+}
+
+async function parseMarkdownSummaryInternal(filePath: string, slug: string, preParsed?: ParsedPostFile): Promise<PostSummary> {
+  const parsed = preParsed ?? await readParsedPost(filePath);
+  const { stat, matterFile } = parsed;
+  const cached = getCachedSummary(slug, stat.mtimeMs);
+  if (cached) {
+    return cached;
   }
 
-  const raw = fs.readFileSync(filePath, 'utf8');
-  const { data, content } = matter(raw);
-  const title = data.title ?? slug;
+  const summary = buildPostSummary(slug, matterFile, stat);
+  setCachedSummary(slug, { mtimeMs: stat.mtimeMs, summary });
+  return summary;
+}
+
+function buildPostSummary(slug: string, matterFile: GrayMatterFile<string>, stat: fs.Stats): PostSummary {
+  const { data, content } = matterFile;
+  const title = sanitizePlainText(data.title, 80) || slug;
   const date = data.date ? new Date(data.date) : stat.mtime;
-  const summary = data.summary ?? content.replace(/[#>*_`-]/g, '').slice(0, 140).trim();
-  const wordCount = content.split(/\s+/).filter(Boolean).length;
+  
+  // 優化：只在需要時才處理 fallback summary
+  let summary: string | undefined;
+  if (typeof data.summary === 'string') {
+    summary = sanitizePlainText(data.summary, 200);
+  } else {
+    // 只處理前 500 字元以減少記憶體使用
+    const preview = content.slice(0, 500).replace(/[#>*_`-]/g, '');
+    summary = sanitizePlainText(preview, 200);
+  }
+  
+  // 優化：使用更高效的單詞計數方式
+  let wordCount = 0;
+  let inWord = false;
+  for (let i = 0; i < content.length; i++) {
+    const isSpace = /\s/.test(content[i]);
+    if (!isSpace && !inWord) {
+      wordCount++;
+      inWord = true;
+    } else if (isSpace) {
+      inWord = false;
+    }
+  }
+  
   const readingMinutes = Math.max(1, Math.round(wordCount / 250));
   const tags = normalizeTags(data.tags);
   const category = normalizeCategory(data.category);
   const lastUpdated = normalizeUpdatedDate(data.updated ?? data.lastUpdated, stat.mtime);
 
-  const postSummary: PostSummary = {
+  return {
     slug,
     title,
     date,
@@ -76,33 +234,40 @@ function parseMarkdownSummary(filePath: string, slug: string): PostSummary {
     tags,
     category,
   };
-
-  summaryCache.set(slug, { mtimeMs: stat.mtimeMs, summary: postSummary });
-  return postSummary;
 }
 
-async function parseMarkdownHtml(filePath: string, slug: string): Promise<string> {
-  const stat = fs.statSync(filePath);
-  const cached = htmlCache.get(slug);
-  if (cached && cached.mtimeMs === stat.mtimeMs) {
-    // 更新最後訪問時間（LRU）
-    cached.lastAccessed = Date.now();
-    return cached.contentHtml;
+async function parseMarkdownHtmlInternal(
+  filePath: string,
+  slug: string,
+  preParsed?: ParsedPostFile,
+): Promise<string> {
+  const stat = preParsed?.stat ?? fs.statSync(filePath);
+  if (HTML_CACHE_ENABLED) {
+    const cached = htmlCache.get(slug);
+    if (cached && cached.mtimeMs === stat.mtimeMs) {
+      cached.lastAccessed = Date.now();
+      return cached.contentHtml;
+    }
   }
 
-  const raw = fs.readFileSync(filePath, 'utf8');
-  const { content } = matter(raw);
+  const parsed = preParsed ?? await readParsedPost(filePath);
+  const matterFile = parsed.matterFile;
   const marked = await getMarked();
-  const contentHtml = marked.marked.parse(content) as string;
+  const unsafeHtml = marked.marked.parse(matterFile.content) as string;
+  const contentHtml = await sanitizeMarkdownHtml(unsafeHtml, {
+    slug,
+    onSanitized: ({ slug: sanitizedSlug }) => {
+      if (process.env.NODE_ENV !== 'production') {
+        logContentError(`[content] Sanitized unsafe HTML in post "${sanitizedSlug ?? 'unknown'}"`);
+      }
+    },
+  });
 
-  // LRU 快取：如果超過最大大小，移除最舊的
-  if (htmlCache.size >= MAX_HTML_CACHE_SIZE) {
-    const entries = Array.from(htmlCache.entries());
-    entries.sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
-    const oldestKey = entries[0][0];
-    htmlCache.delete(oldestKey);
+  if (!HTML_CACHE_ENABLED) {
+    return contentHtml;
   }
 
+  ensureHtmlCacheCapacity();
   htmlCache.set(slug, {
     mtimeMs: stat.mtimeMs,
     contentHtml,
@@ -112,17 +277,44 @@ async function parseMarkdownHtml(filePath: string, slug: string): Promise<string
   return contentHtml;
 }
 
+function ensureHtmlCacheCapacity() {
+  if (!HTML_CACHE_ENABLED || MAX_HTML_CACHE_SIZE === 0) {
+    htmlCache.clear();
+    return;
+  }
+  if (htmlCache.size < MAX_HTML_CACHE_SIZE) {
+    return;
+  }
+  let oldestKey: string | null = null;
+  let oldestAccess = Number.POSITIVE_INFINITY;
+  for (const [key, entry] of htmlCache.entries()) {
+    if (entry.lastAccessed < oldestAccess) {
+      oldestAccess = entry.lastAccessed;
+      oldestKey = key;
+    }
+  }
+  if (oldestKey) {
+    htmlCache.delete(oldestKey);
+  }
+}
+
+export function clearContentCaches() {
+  summaryCache.clear();
+  htmlCache.clear();
+}
+
+
 function normalizeTags(raw: unknown): string[] {
   if (Array.isArray(raw)) {
     return raw
-      .map((tag) => String(tag).trim())
+      .map((tag) => sanitizePlainText(tag, 30))
       .filter((tag) => tag.length > 0)
       .slice(0, 8);
   }
   if (typeof raw === 'string') {
     return raw
       .split(',')
-      .map((tag) => tag.trim())
+      .map((tag) => sanitizePlainText(tag, 30))
       .filter((tag) => tag.length > 0)
       .slice(0, 8);
   }
@@ -130,8 +322,8 @@ function normalizeTags(raw: unknown): string[] {
 }
 
 function normalizeCategory(raw: unknown): string {
-  if (typeof raw === 'string' && raw.trim().length > 0) {
-    return raw.trim();
+  if (typeof raw === 'string') {
+    return sanitizePlainText(raw, 40) || '未分類';
   }
   return '未分類';
 }
@@ -146,7 +338,22 @@ function normalizeUpdatedDate(raw: unknown, fallback: Date): Date {
   return fallback;
 }
 
-export function loadPostSummaries(): PostSummary[] {
+// 批次處理工具：限制並發數以減少記憶體峰值
+async function batchProcess<T, R>(
+  items: T[],
+  processor: (item: T) => Promise<R | null>,
+  concurrency: number = 5
+): Promise<R[]> {
+  const results: (R | null)[] = [];
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const batchResults = await Promise.all(batch.map(processor));
+    results.push(...batchResults);
+  }
+  return results.filter((entry): entry is R => entry !== null);
+}
+
+export async function loadPostSummaries(): Promise<PostSummary[]> {
   if (!fs.existsSync(POSTS_DIR)) {
     return [];
   }
@@ -156,36 +363,50 @@ export function loadPostSummaries(): PostSummary[] {
     .filter((file) => file.endsWith('.md'))
     .sort((a, b) => a.localeCompare(b));
 
-  const summaries = files
-    .map((file) => {
+  // 使用批次處理限制並發數（預設 5 個），減少記憶體峰值
+  const concurrency = LOW_MEMORY_MODE ? 2 : 5;
+  const summaries = await batchProcess(
+    files,
+    async (file) => {
       const slug = path.basename(file, '.md');
-      const fullPath = path.join(POSTS_DIR, file);
-      try {
-        return parseMarkdownSummary(fullPath, slug);
-      } catch (error) {
-        console.error(`[content] Failed to parse ${file}:`, error);
+      const safeSlug = sanitizeSlug(slug);
+      if (!safeSlug) {
+        logContentError(`[content] Skipping invalid slug "${slug}"`);
         return null;
       }
-    })
-    .filter((entry): entry is PostSummary => Boolean(entry))
-    .sort((a, b) => b.date.getTime() - a.date.getTime());
+      const fullPath = path.join(POSTS_DIR, file);
+      try {
+        return await parseMarkdownSummary(fullPath, safeSlug);
+      } catch (error) {
+        logContentError(`[content] Failed to parse ${file}`, error);
+        return null;
+      }
+    },
+    concurrency
+  );
 
-  return summaries;
+  return summaries.sort((a, b) => b.date.getTime() - a.date.getTime());
 }
 
 export async function loadPost(slug: string): Promise<Post | null> {
-  const filePath = path.join(POSTS_DIR, `${slug}.md`);
-  if (!fs.existsSync(filePath)) {
+  const safeSlug = sanitizeSlug(slug);
+  if (!safeSlug) {
+    return null;
+  }
+
+  const filePath = resolvePostFilePath(safeSlug);
+  if (!filePath || !fs.existsSync(filePath)) {
     return null;
   }
 
   try {
-    const summary = parseMarkdownSummary(filePath, slug);
+    const parsed = await readParsedPost(filePath);
+    const summary = await parseMarkdownSummaryInternal(filePath, safeSlug, parsed);
     // 只在需要時才生成 HTML（延遲載入）
-    const contentHtml = await parseMarkdownHtml(filePath, slug);
+    const contentHtml = await parseMarkdownHtmlInternal(filePath, safeSlug, parsed);
     return { ...summary, contentHtml };
   } catch (error) {
-    console.error(`[content] Failed to read post ${slug}:`, error);
+    logContentError(`[content] Failed to read post ${safeSlug}`, error);
     return null;
   }
 }

@@ -9,13 +9,14 @@ const PAGE_SIZE = 3;
 
 export function PostList({ posts }: PostListProps) {
   const tagStats = useMemo(() => {
-    const counts = new Map<string, number>();
-    posts.forEach((post) => {
-      post.tags.forEach((tag) => {
-        counts.set(tag, (counts.get(tag) ?? 0) + 1);
-      });
-    });
-    return Array.from(counts.entries())
+    // 優化：使用物件而非 Map 以減少記憶體開銷（對於小資料集更高效）
+    const counts: Record<string, number> = {};
+    for (const post of posts) {
+      for (const tag of post.tags) {
+        counts[tag] = (counts[tag] ?? 0) + 1;
+      }
+    }
+    return Object.entries(counts)
       .map(([tag, count]) => ({ tag, count }))
       .sort(
         (a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'zh-Hant', { sensitivity: 'base' }),
@@ -23,12 +24,13 @@ export function PostList({ posts }: PostListProps) {
   }, [posts]);
 
   const categoryStats = useMemo(() => {
-    const counts = new Map<string, number>();
-    posts.forEach((post) => {
+    // 優化：使用物件而非 Map 以減少記憶體開銷
+    const counts: Record<string, number> = {};
+    for (const post of posts) {
       const category = post.category ?? '未分類';
-      counts.set(category, (counts.get(category) ?? 0) + 1);
-    });
-    return Array.from(counts.entries())
+      counts[category] = (counts[category] ?? 0) + 1;
+    }
+    return Object.entries(counts)
       .map(([category, count]) => ({ category, count }))
       .sort(
         (a, b) =>

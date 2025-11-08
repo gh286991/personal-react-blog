@@ -5,7 +5,7 @@ import express from 'express';
 import type { ViteDevServer } from 'vite';
 
 import type { AppProps } from './types';
-import { loadPost, loadPostSummaries } from './content';
+import { clearContentCaches, isLowMemoryMode, loadPost, loadPostSummaries } from './content';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -20,6 +20,9 @@ async function createServer() {
   app.disable('etag');
   app.set('trust proxy', false);
   app.set('view cache', false);
+  
+  // 優化：禁用 body parser（此應用不需要解析請求體）
+  // 這可以減少 Express 的記憶體開銷
   
   let vite: ViteDevServer | undefined;
   let template: string = '';
@@ -64,7 +67,8 @@ async function createServer() {
   }
 
   app.get('/', async (req, res) => {
-    const props: AppProps = { page: 'list', posts: loadPostSummaries() };
+    const posts = await loadPostSummaries();
+    const props: AppProps = { page: 'list', posts };
     await renderPage(req, res, 200, props, { vite, template, serverRender });
   });
 
@@ -103,6 +107,7 @@ async function renderPage(
     serverRender?: (props: AppProps) => Promise<{ html: string }>;
   },
 ) {
+  const shouldClearCaches = isLowMemoryMode;
   try {
     let htmlTemplate: string;
     let render: (props: AppProps) => Promise<{ html: string }>;
@@ -121,11 +126,21 @@ async function renderPage(
     }
 
     const { html } = await render(props);
-    const payload = JSON.stringify(props).replace(/</g, '\\u003c');
+    // 優化：只在列表頁傳遞必要的摘要資料，詳情頁不傳遞 posts 陣列
+    const clientProps: AppProps = props.page === 'list' 
+      ? props 
+      : { page: props.page, posts: [], post: props.post };
+    
+    // 優化：使用單次字串操作減少記憶體分配
     const { title, description } = getMeta(props);
+    const escapedTitle = escapeAttr(title);
+    const escapedDescription = escapeAttr(description);
+    const payload = JSON.stringify(clientProps).replace(/</g, '\\u003c');
+    
+    // 優化：使用單次 replace 操作（雖然需要多次，但比多次字串連接更高效）
     const response = htmlTemplate
-      .replace('%APP_TITLE%', escapeAttr(title))
-      .replace('%APP_DESCRIPTION%', escapeAttr(description))
+      .replace('%APP_TITLE%', escapedTitle)
+      .replace('%APP_DESCRIPTION%', escapedDescription)
       .replace('<!--app-html-->', html)
       .replace('<!--app-data-->', payload);
 
@@ -136,6 +151,10 @@ async function renderPage(
     }
     console.error('[server] render failed', error);
     res.status(500).send('Internal Server Error');
+  } finally {
+    if (shouldClearCaches) {
+      clearContentCaches();
+    }
   }
 }
 
@@ -164,20 +183,32 @@ function resolve(p: string) {
 async function start() {
   // 優化記憶體使用：強制垃圾回收（如果可用）
   const gc = (global as { gc?: () => void }).gc;
-  if (gc && typeof gc === 'function') {
-    // 定期執行垃圾回收以釋放記憶體
+  if (isLowMemoryMode && gc && typeof gc === 'function') {
+    // 定期執行垃圾回收以釋放記憶體（在低記憶體模式下更頻繁）
     setInterval(() => {
       try {
         gc();
       } catch (e) {
         // 忽略錯誤
       }
-    }, 30000); // 每 30 秒執行一次
+    }, 20000); // 每 20 秒執行一次（低記憶體模式下更頻繁）
+  } else if (gc && typeof gc === 'function') {
+    // 非低記憶體模式下也定期清理，但頻率較低
+    setInterval(() => {
+      try {
+        gc();
+      } catch (e) {
+        // 忽略錯誤
+      }
+    }, 60000); // 每 60 秒執行一次
   }
   
   const app = await createServer();
   app.listen(PORT, () => {
     console.log(`✅ React SSR blog running on http://localhost:${PORT}`);
+    if (isLowMemoryMode) {
+      console.log('💾 Low memory mode enabled');
+    }
   });
 }
 

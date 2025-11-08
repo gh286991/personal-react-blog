@@ -5,8 +5,8 @@ WORKDIR /app
 # Copy package files first for better layer caching
 COPY package.json package-lock.json ./
 
-# Install all dependencies using Bun (faster than npm)
-RUN bun install --frozen-lockfile
+# Install all dependencies using Bun (allow migration from npm lockfile)
+RUN bun install
 
 # Copy only necessary files for build
 COPY tsconfig*.json vite.config.ts ./
@@ -19,7 +19,7 @@ COPY index.html ./
 RUN bun run build
 
 # Remove dev dependencies and clean up
-RUN bun install --production --frozen-lockfile && \
+RUN bun install --production && \
     rm -rf /tmp/* /var/tmp/*
 
 ### Runtime stage: minimal bun slim runtime
