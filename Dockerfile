@@ -3,14 +3,19 @@ FROM oven/bun:1.1.22 AS builder
 WORKDIR /app
 
 # Copy package files first for better layer caching
-COPY package.json package-lock.json ./
+COPY package.json bun.lock ./
 
-# Install all dependencies using Bun (allow migration from npm lockfile)
-RUN bun install
+# Install all dependencies using Bun with its native lockfile
+RUN bun install --frozen-lockfile
 
 # Copy only necessary files for build
 COPY tsconfig*.json vite.config.ts tailwind.config.js postcss.config.js index.html ./
-COPY frontend server shared scripts posts public ./
+COPY frontend ./frontend
+COPY server ./server
+COPY shared ./shared
+COPY scripts ./scripts
+COPY posts ./posts
+COPY public ./public
 
 # Build the application in production mode
 ENV NODE_ENV=production
@@ -35,7 +40,8 @@ ENV PATH="/app/node_modules/.bin:${PATH}"
 
 ENV NODE_ENV=production \
     CONTENT_BASE=/app/dist \
-    PORT=3000
+    PORT=3000 \
+    LOW_MEMORY_MODE=true
 
 # Copy only production dependencies and built files
 COPY --from=builder /app/package.json ./
@@ -44,5 +50,5 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-# 使用 --smol 標誌以優化記憶體使用
-CMD ["bun", "--smol", "dist/server/server.js"]
+# 使用 --smol 標誌、heap 限制和啟用 GC 以優化記憶體使用（目標 <50MB）
+CMD ["bun", "--smol", "--expose-gc", "--max-old-space-size=48", "dist/server/server.js"]

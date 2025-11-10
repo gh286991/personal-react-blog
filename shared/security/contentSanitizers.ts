@@ -54,7 +54,8 @@ const SAFE_CLASS_PATTERNS: Record<string, (string | RegExp)[]> = {
 };
 
 let sanitizeHtmlModule: typeof sanitizeHtml | null = null;
-let htmlSanitizeOptions: SanitizeOptions | null = null;
+let htmlSanitizeOptionsBase: SanitizeOptions | null = null;
+let htmlSanitizeOptionsWithTransform: SanitizeOptions | null = null;
 
 async function getSanitizeHtml(): Promise<typeof sanitizeHtml> {
   if (!sanitizeHtmlModule) {
@@ -64,7 +65,7 @@ async function getSanitizeHtml(): Promise<typeof sanitizeHtml> {
   return sanitizeHtmlModule;
 }
 
-function buildSanitizeOptions(sanitize: typeof sanitizeHtml): SanitizeOptions {
+function buildSanitizeOptions(sanitize: typeof sanitizeHtml, includeTransforms = false): SanitizeOptions {
   return {
     allowedTags: SAFE_HTML_TAGS,
     allowedAttributes: {
@@ -79,22 +80,63 @@ function buildSanitizeOptions(sanitize: typeof sanitizeHtml): SanitizeOptions {
     allowedSchemesAppliedToAttributes: ['href', 'src'],
     enforceHtmlBoundary: true,
     allowProtocolRelative: false,
-    transformTags: {
-      a: sanitize.simpleTransform('a', { rel: 'noopener noreferrer' }),
-    },
+    transformTags: includeTransforms
+      ? {
+          a: sanitize.simpleTransform('a', { rel: 'noopener noreferrer' }),
+        }
+      : undefined,
   };
 }
 
 export async function sanitizeMarkdownHtml(html: string, options: HtmlSanitizeOptions = {}): Promise<string> {
   const sanitize = await getSanitizeHtml();
-  if (!htmlSanitizeOptions) {
-    htmlSanitizeOptions = buildSanitizeOptions(sanitize);
+  if (!htmlSanitizeOptionsBase) {
+    htmlSanitizeOptionsBase = buildSanitizeOptions(sanitize, false);
   }
-  const cleaned = sanitize(html, htmlSanitizeOptions);
-  if (cleaned !== html && options.onSanitized) {
+  if (!htmlSanitizeOptionsWithTransform) {
+    htmlSanitizeOptionsWithTransform = buildSanitizeOptions(sanitize, true);
+  }
+  const cleaned = sanitize(html, htmlSanitizeOptionsBase);
+  if (options.onSanitized && !areHtmlStringsEquivalent(cleaned, html)) {
     options.onSanitized({ slug: options.slug });
   }
-  return cleaned;
+  return sanitize(cleaned, htmlSanitizeOptionsWithTransform);
+}
+
+function areHtmlStringsEquivalent(a: string, b: string): boolean {
+  if (a === b) {
+    return true;
+  }
+  return decodeBasicEntities(a) === decodeBasicEntities(b);
+}
+
+function decodeBasicEntities(value: string): string {
+  return value.replace(/&(#\d+|#x[a-f0-9]+|[a-z]+);/gi, (match, entity) => {
+    if (entity[0] === '#') {
+      const isHex = entity[1]?.toLowerCase() === 'x';
+      const codePoint = Number.parseInt(isHex ? entity.slice(2) : entity.slice(1), isHex ? 16 : 10);
+      if (Number.isFinite(codePoint)) {
+        return String.fromCodePoint(codePoint);
+      }
+      return match;
+    }
+    const lower = entity.toLowerCase();
+    switch (lower) {
+      case 'amp':
+        return '&';
+      case 'lt':
+        return '<';
+      case 'gt':
+        return '>';
+      case 'quot':
+        return '"';
+      case 'apos':
+      case 'rsquo':
+        return '\'';
+      default:
+        return match;
+    }
+  });
 }
 
 export function sanitizePlainText(raw: unknown, maxLength = 200): string {

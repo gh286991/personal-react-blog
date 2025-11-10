@@ -48,10 +48,10 @@ if (MODE === 'dev') {
 } else {
   if (shouldUseBun) {
     command = 'bun';
-    args = ['dist/server/server.js'];
+    args = ['--smol', '--max-old-space-size=48', 'dist/server/server.js'];
   } else {
     command = 'node';
-    args = ['dist/server/server.js'];
+    args = ['--max-old-space-size=48', 'dist/server/server.js'];
   }
 }
 

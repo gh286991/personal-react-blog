@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Sparkles, Rocket, Laptop, Wrench, Rss } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 
@@ -11,6 +11,7 @@ interface LayoutProps {
 
 export function Layout({ title, description, children, variant = 'hero' }: LayoutProps) {
   const currentYear = new Date().getFullYear();
+  const [isInfoDrawerOpen, setIsInfoDrawerOpen] = useState(false);
   
   return (
     <div className="relative min-h-screen flex flex-col">
@@ -23,11 +24,11 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                 {/* Logo/Brand */}
                 <a 
                   href="/" 
-                  className="group relative text-2xl md:text-3xl font-bold text-slate-900 dark:text-white font-serif tracking-tight"
+                  className="group relative text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight"
                 >
                   <span className="relative inline-block">
-                    <span className="hidden sm:inline">tomslab.dev｜湯編驛</span>
-                    <span className="sm:hidden">湯編驛</span>
+                    <span className="hidden sm:inline">tomslab.dev｜<span className="font-serif">湯編驛</span></span>
+                    <span className="sm:hidden font-serif">湯編驛</span>
                     <span className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-primary-600 via-accent to-primary-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
                   </span>
                 </a>
@@ -35,15 +36,7 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                 {/* Navigation Links */}
                 <div className="flex items-center gap-4 md:gap-6">
                   <a 
-                    href="/" 
-                    className="relative text-sm md:text-base font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 group"
-                  >
-                    <span>首頁</span>
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-600 dark:bg-primary-400 group-hover:w-full transition-all duration-300"></span>
-                  </a>
-                  
-                  <a 
-                    href="#articles" 
+                    href="/posts" 
                     className="relative text-sm md:text-base font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 group"
                   >
                     <span>文章</span>
@@ -96,7 +89,7 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white mb-6 md:mb-8 tracking-tight leading-tight animate-fade-in">
                   {title ?? (
                     <>
-                      <span className="block">湯編驛</span>
+                      <span className="block font-serif">湯編驛</span>
                       <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-slate-500 dark:text-slate-400 mt-2">Tom's lab</span>
                     </>
                   )}
@@ -140,8 +133,57 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
 
           {/* Info Bar with Glass Effect */}
           <div className="sticky top-16 md:top-20 z-40 glass border-b border-white/20 dark:border-slate-700/50 animate-fade-in">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex flex-wrap justify-between items-center gap-4">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3">
+              {/* Mobile compact drawer */}
+              <div className="md:hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsInfoDrawerOpen((prev) => !prev)}
+                  className="w-full flex items-center justify-between rounded-2xl px-3 py-2.5 bg-primary-50/80 dark:bg-primary-900/30 text-left"
+                  aria-expanded={isInfoDrawerOpen}
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-primary-700 dark:text-primary-300 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4" />
+                      資訊重點
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">技術棧 · 文章主題 · RSS</p>
+                  </div>
+                  <svg
+                    className={`w-4 h-4 text-primary-600 dark:text-primary-300 transition-transform ${isInfoDrawerOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isInfoDrawerOpen && (
+                  <div className="mt-2 space-y-1.5">
+                    <div className="rounded-xl px-3 py-1.5 bg-primary-50 dark:bg-primary-900/15 text-xs text-slate-600 dark:text-slate-300">
+                      <p className="font-semibold text-primary-700 dark:text-primary-300 mb-1">技術棧</p>
+                      <p>React 19 · SSR · Markdown</p>
+                    </div>
+                    <div className="rounded-xl px-3 py-1.5 bg-primary-50 dark:bg-primary-900/15 text-xs text-slate-600 dark:text-slate-300">
+                      <p className="font-semibold text-primary-700 dark:text-primary-300 mb-1">文章主題</p>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="flex items-center gap-1"><Rocket className="w-3.5 h-3.5" />MVP</span>
+                        <span className="flex items-center gap-1"><Laptop className="w-3.5 h-3.5" />軟體開發</span>
+                        <span className="flex items-center gap-1"><Wrench className="w-3.5 h-3.5" />工具</span>
+                      </div>
+                    </div>
+                    <a
+                      href="/feed.xml"
+                      className="rounded-xl px-3 py-1.5 bg-primary-50 dark:bg-primary-900/15 text-xs font-semibold text-primary-600 dark:text-primary-300 flex items-center gap-2 justify-center"
+                    >
+                      <Rss className="w-4 h-4" />
+                      RSS 訂閱
+                    </a>
+                  </div>
+                )}
+              </div>
+              {/* Desktop/tablet info bar */}
+              <div className="hidden md:flex md:flex-wrap md:items-center md:justify-between gap-3">
                 <div className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
                   <span className="text-xs font-semibold uppercase tracking-wider gradient-text">技術棧</span>
                   <span className="text-sm text-slate-600 dark:text-slate-400">React 19 · SSR · Markdown</span>
@@ -178,20 +220,26 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
         </>
       ) : (
         <header className="glass border-b border-white/20 dark:border-slate-700/50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-            <div className="flex justify-between items-start gap-4">
-              <div>
-                <div className="inline-block px-3 py-1 bg-primary-100 dark:bg-primary-900/30 rounded-lg text-xs font-semibold uppercase tracking-wider gradient-text mb-3">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 md:py-8">
+            <div className="flex justify-between items-center sm:items-start gap-2 sm:gap-4">
+              <div className="flex flex-col">
+                <a
+                  href="/"
+                  className="sm:hidden text-2xl font-semibold text-slate-900 dark:text-white font-serif tracking-tight"
+                >
+                  湯編驛
+                </a>
+                <div className="hidden sm:inline-block px-3 py-1 bg-primary-100 dark:bg-primary-900/30 rounded-lg text-xs font-semibold uppercase tracking-wider gradient-text mb-2">
                   Post Detail
                 </div>
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
+                <h1 className="hidden sm:block text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
                   {title ?? '文章詳情'}
                 </h1>
                 {description && (
-                  <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 italic font-serif">{description}</p>
+                  <p className="hidden sm:block text-base md:text-lg text-slate-600 dark:text-slate-400 italic font-serif">{description}</p>
                 )}
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <ThemeToggle />
                 <a
                   href="/"
@@ -200,7 +248,7 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>
-                  <span className="hidden sm:inline">返回列表</span>
+                  <span className="text-sm">返回列表</span>
                 </a>
               </div>
             </div>
@@ -216,15 +264,14 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
       </main>
 
       {/* Footer with Gradient Accent */}
-      <footer className="relative bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
+      <footer className="relative bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 site-footer">
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-primary-600 to-transparent"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p className="text-center text-sm text-slate-500 dark:text-slate-400 font-serif flex items-center justify-center gap-2">
-            © {currentYear} | Built with React, Vite & Bun <Sparkles className="w-4 h-4" />
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400 font-serif flex items-center justify-center gap-2 flex-wrap">
+            <span>© {currentYear} 湯編驛. All rights reserved. | Built with React, Vite & Bun <Sparkles className="w-4 h-4 inline" /></span>
           </p>
         </div>
       </footer>
     </div>
   );
 }
-

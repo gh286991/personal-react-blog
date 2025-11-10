@@ -19,8 +19,8 @@ async function getMatter(): Promise<MatterFunction> {
 
 const CONTENT_BASE = process.env.CONTENT_BASE ?? process.cwd();
 const POSTS_DIR = path.resolve(CONTENT_BASE, 'posts');
-const DEFAULT_MAX_HTML_CACHE_SIZE = 2; // 降低預設 HTML 快取大小
-const DEFAULT_SUMMARY_CACHE_SIZE = 50; // 降低預設摘要快取大小（從 200 降到 50）
+const DEFAULT_MAX_HTML_CACHE_SIZE = 0; // 完全禁用 HTML 快取以節省記憶體
+const DEFAULT_SUMMARY_CACHE_SIZE = 5; // 只保留最近 5 個摘要（從 50 降到 5）
 const LOW_MEMORY_MODE = String(process.env.LOW_MEMORY_MODE ?? '').toLowerCase() === 'true';
 
 const MAX_HTML_CACHE_SIZE = LOW_MEMORY_MODE ? 0 : resolveHtmlCacheSize();
@@ -113,13 +113,50 @@ async function getMarked() {
   return markedModule;
 }
 
-function resolvePostFilePath(safeSlug: string): string | null {
-  const candidate = path.resolve(POSTS_DIR, `${safeSlug}.md`);
-  const relative = path.relative(POSTS_DIR, candidate);
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    return null;
+// 遞迴掃描所有 .md 文件，包含子目錄
+function getAllMarkdownFiles(dir: string, baseDir: string = dir): Array<{ relativePath: string; fullPath: string; folder: string | null }> {
+  const results: Array<{ relativePath: string; fullPath: string; folder: string | null }> = [];
+  
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    
+    if (entry.isDirectory()) {
+      // 遞迴掃描子目錄
+      results.push(...getAllMarkdownFiles(fullPath, baseDir));
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      const relativePath = path.relative(baseDir, fullPath);
+      // 提取文件夾名稱作為分類（如果在子目錄中）
+      const folder = path.dirname(relativePath) === '.' ? null : path.dirname(relativePath);
+      results.push({ relativePath, fullPath, folder });
+    }
   }
-  return candidate;
+  
+  return results;
+}
+
+function resolvePostFilePath(safeSlug: string): string | null {
+  // 首先嘗試在根目錄找
+  const rootCandidate = path.resolve(POSTS_DIR, `${safeSlug}.md`);
+  if (fs.existsSync(rootCandidate)) {
+    return rootCandidate;
+  }
+  
+  // 如果根目錄找不到，遞迴搜尋子目錄
+  const allFiles = getAllMarkdownFiles(POSTS_DIR);
+  const found = allFiles.find(f => path.basename(f.relativePath, '.md') === safeSlug);
+  
+  if (found) {
+    // 安全性檢查：確保路徑在 POSTS_DIR 內
+    const relative = path.relative(POSTS_DIR, found.fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      return null;
+    }
+    return found.fullPath;
+  }
+  
+  return null;
 }
 
 function resolveHtmlCacheSize(): number {
@@ -180,7 +217,7 @@ async function parseMarkdownSummaryInternal(filePath: string, slug: string, preP
 function buildPostSummary(slug: string, matterFile: GrayMatterFile<string>, stat: fs.Stats): PostSummary {
   const { data, content } = matterFile;
   const title = sanitizePlainText(data.title, 80) || slug;
-  const date = data.date ? new Date(data.date) : stat.mtime;
+  const date = resolvePublishDate(data.date, stat);
   
   // 優化：只在需要時才處理 fallback summary
   let summary: string | undefined;
@@ -205,10 +242,10 @@ function buildPostSummary(slug: string, matterFile: GrayMatterFile<string>, stat
     }
   }
   
-  const readingMinutes = Math.max(1, Math.round(wordCount / 250));
+  const readingMinutes = Math.max(1, Math.round(wordCount / 150));
   const tags = normalizeTags(data.tags);
   const category = normalizeCategory(data.category);
-  const lastUpdated = normalizeUpdatedDate(data.updated ?? data.lastUpdated, stat.mtime);
+  const lastUpdated = resolveLastUpdatedDate(stat, data.updated ?? data.lastUpdated);
 
   return {
     slug,
@@ -314,14 +351,46 @@ function normalizeCategory(raw: unknown): string {
   return '未分類';
 }
 
-function normalizeUpdatedDate(raw: unknown, fallback: Date): Date {
-  if (typeof raw === 'string' && raw.trim().length > 0) {
-    const parsed = new Date(raw);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
+function resolvePublishDate(raw: unknown, stat: fs.Stats): Date {
+  const parsed = parseDateLike(raw);
+  if (parsed) {
+    return parsed;
+  }
+  const created = firstValidDate(stat.birthtime, stat.ctime);
+  return created ?? stat.mtime;
+}
+
+function resolveLastUpdatedDate(stat: fs.Stats, raw?: unknown): Date {
+  const parsed = parseDateLike(raw);
+  if (parsed) {
+    return parsed;
+  }
+  return stat.mtime;
+}
+
+function parseDateLike(raw: unknown): Date | null {
+  if (raw instanceof Date && !Number.isNaN(raw.getTime())) {
+    return raw;
+  }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.length > 0) {
+      const parsed = new Date(trimmed);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
     }
   }
-  return fallback;
+  return null;
+}
+
+function firstValidDate(...dates: Array<Date | undefined>): Date | null {
+  for (const date of dates) {
+    if (date && !Number.isNaN(date.getTime()) && date.getTime() > 0) {
+      return date;
+    }
+  }
+  return null;
 }
 
 // 批次處理工具：限制並發數以減少記憶體峰值
@@ -344,27 +413,29 @@ export async function loadPostSummaries(): Promise<PostSummary[]> {
     return [];
   }
 
-  const files = fs
-    .readdirSync(POSTS_DIR)
-    .filter((file) => file.endsWith('.md'))
-    .sort((a, b) => a.localeCompare(b));
+  const files = getAllMarkdownFiles(POSTS_DIR)
+    .sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 
   // 使用批次處理限制並發數（預設 5 個），減少記憶體峰值
-  const concurrency = LOW_MEMORY_MODE ? 2 : 5;
+  const concurrency = LOW_MEMORY_MODE ? 1 : 3; // 降低並發數以減少記憶體峰值
   const summaries = await batchProcess(
     files,
-    async (file) => {
-      const slug = path.basename(file, '.md');
+    async (fileInfo) => {
+      const slug = path.basename(fileInfo.relativePath, '.md');
       const safeSlug = sanitizeSlug(slug);
       if (!safeSlug) {
         logContentError(`[content] Skipping invalid slug "${slug}"`);
         return null;
       }
-      const fullPath = path.join(POSTS_DIR, file);
       try {
-        return await parseMarkdownSummary(fullPath, safeSlug);
+        const summary = await parseMarkdownSummary(fileInfo.fullPath, safeSlug);
+        // 如果文章在子目錄中，且沒有在 frontmatter 中指定 category，使用資料夾名稱
+        if (fileInfo.folder && (!summary.category || summary.category === '未分類')) {
+          summary.category = fileInfo.folder;
+        }
+        return summary;
       } catch (error) {
-        logContentError(`[content] Failed to parse ${file}`, error);
+        logContentError(`[content] Failed to parse ${fileInfo.relativePath}`, error);
         return null;
       }
     },

@@ -11,7 +11,7 @@
     "build:server": "bunx tsc --project tsconfig.server.json",
     "copy:static": "node scripts/copy-static.mjs",
     "build": "npm run clean && npm run build:client && npm run build:ssr && npm run build:server && npm run copy:static",
-    "start": "cross-env NODE_ENV=production CONTENT_BASE=dist node scripts/run-server.mjs start"
+    "start": "cross-env NODE_ENV=production CONTENT_BASE=dist LOW_MEMORY_MODE=true node scripts/run-server.mjs start"
   },
   "keywords": [
     "react",
@@ -45,6 +45,7 @@
     "cross-env": "^7.0.3",
     "postcss": "^8.4.49",
     "sass": "^1.83.0",
+    "sass-embedded": "^1.93.3",
     "tailwindcss": "^3.4.16",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",

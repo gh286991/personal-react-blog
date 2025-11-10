@@ -78,6 +78,12 @@ async function createServer() {
     await renderPage(req, res, 200, props, { vite, template, serverRender });
   });
 
+  app.get('/posts', async (req, res) => {
+    const posts = await loadPostSummaries();
+    const props: AppProps = { page: 'archive', posts, post: null };
+    await renderPage(req, res, 200, props, { vite, template, serverRender });
+  });
+
   app.get('/posts/:slug', async (req, res) => {
     const post = await loadPost(req.params.slug);
     if (!post) {
@@ -149,7 +155,7 @@ async function renderPage(
 
     const { html } = await render(props);
     // 優化：只在列表頁傳遞必要的摘要資料，詳情頁不傳遞 posts 陣列
-    const clientProps: AppProps = props.page === 'list' 
+    const clientProps: AppProps = (props.page === 'list' || props.page === 'archive')
       ? props 
       : { page: props.page, posts: [], post: props.post };
     
@@ -192,6 +198,13 @@ function getMeta(props: AppProps) {
     return {
       title: '關於我 - tomslab.dev｜湯編驛 (Tom\'s lab)',
       description: '關於 Tom - 日常編譯開發筆記，記錄程式碼與想法的編譯過程',
+    };
+  }
+
+  if (props.page === 'archive') {
+    return {
+      title: '文章列表 - tomslab.dev｜湯編驛 (Tom\'s lab)',
+      description: '瀏覽全部文章與標籤，快速找到想看的內容',
     };
   }
 
@@ -282,7 +295,7 @@ async function start() {
       } catch (e) {
         // 忽略錯誤
       }
-    }, 20000); // 每 20 秒執行一次（低記憶體模式下更頻繁）
+    }, 10000); // 每 10 秒執行一次（從 20 秒改為 10 秒以保持記憶體低水位）
   } else if (gc && typeof gc === 'function') {
     // 非低記憶體模式下也定期清理，但頻率較低
     setInterval(() => {

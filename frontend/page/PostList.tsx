@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, Filter } from 'lucide-react';
 import type { PostSummary } from '../../shared/types.js';
 
 interface PostListProps {
@@ -35,10 +35,28 @@ export function PostList({ posts }: PostListProps) {
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [page, setPage] = useState(1);
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(true);
 
   useEffect(() => {
     setPage(1);
   }, [selectedTag, selectedCategory]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    const handleChange = () => {
+      setIsFilterPanelOpen(mediaQuery.matches);
+    };
+    handleChange();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else {
+      mediaQuery.addListener(handleChange);
+      return () => mediaQuery.removeListener(handleChange);
+    }
+  }, []);
 
   const filteredPosts = posts.filter((post) => {
     const tagMatch = selectedTag === 'all' || post.tags.includes(selectedTag);
@@ -50,10 +68,27 @@ export function PostList({ posts }: PostListProps) {
   const pagePosts = filteredPosts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-6 md:space-y-12">
       {/* Filters Section with Modern Pill Design */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 md:p-8 border border-slate-200 dark:border-slate-700">
-        <div className="space-y-6">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4 md:p-8 border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between md:hidden">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">篩選條件</p>
+          <button
+            type="button"
+            onClick={() => setIsFilterPanelOpen((prev) => !prev)}
+            className={`inline-flex items-center justify-center w-10 h-10 rounded-full border border-primary-100 dark:border-primary-900/40 text-primary-600 dark:text-primary-300 bg-primary-50/60 dark:bg-primary-900/20 transition-colors ${isFilterPanelOpen ? 'shadow-inner' : ''}`}
+            aria-expanded={isFilterPanelOpen}
+            aria-controls="filters-panel"
+            aria-label={isFilterPanelOpen ? '收合篩選' : '展開篩選'}
+          >
+            <Filter className={`w-4 h-4 transition-transform ${isFilterPanelOpen ? '' : 'rotate-90'}`} />
+          </button>
+        </div>
+        <div
+          id="filters-panel"
+          className={`${isFilterPanelOpen ? 'mt-2' : 'mt-0 hidden'} md:mt-0 md:block`}
+        >
+          <div className="space-y-6">
           {/* Tags Filter */}
           <div>
             <label className="block text-sm font-semibold uppercase tracking-wider gradient-text mb-4">
@@ -120,6 +155,7 @@ export function PostList({ posts }: PostListProps) {
                 </button>
               ))}
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -263,4 +299,3 @@ export function PostList({ posts }: PostListProps) {
     </div>
   );
 }
-

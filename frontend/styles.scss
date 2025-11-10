@@ -176,6 +176,66 @@ $transition-slow: 500ms;
   }
 }
 
+// ===== 自訂 CTA 與贊助按鈕 =====
+.support-cta {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+
+.support-cta-message {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: $text-light-primary;
+  max-width: 480px;
+
+  .dark & {
+    color: $text-dark-primary;
+  }
+}
+
+.bmc-ramen-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(120deg, #5f7fff, #3b5bfd);
+  box-shadow: 0 10px 22px rgba(63, 99, 255, 0.35);
+  text-decoration: none;
+  transition: transform $transition-fast $transition-smooth, box-shadow $transition-fast $transition-smooth;
+
+  &:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 15px 28px rgba(63, 99, 255, 0.45);
+  }
+}
+
+.bmc-ramen-emoji {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .support-cta {
+    padding-top: 1.5rem;
+  }
+
+  .bmc-ramen-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 // Component layer customizations
 @layer components {
   // 文章內容樣式（使用 Serif 字體以獲得更好的閱讀體驗）
@@ -184,6 +244,11 @@ $transition-slow: 500ms;
     font-family: $font-serif;
     color: $text-light-secondary;
     line-height: 1.8;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0)); // 為手機版底部導航預留空間
+    
+    @media (min-width: 1024px) {
+      padding-bottom: 0; // 桌面版不需要額外空間
+    }
     
     .dark & {
       color: $text-dark-secondary;
@@ -208,6 +273,7 @@ $transition-slow: 500ms;
       font-size: clamp(2rem, 5vw, 3rem);
       border-bottom: 2px solid $border-light;
       padding-bottom: 1rem;
+      scroll-margin-top: 120px;
       
       .dark & {
         border-bottom-color: $border-dark;
@@ -218,6 +284,7 @@ $transition-slow: 500ms;
       font-size: clamp(1.75rem, 4vw, 2.5rem);
       border-bottom: 1px solid $border-light;
       padding-bottom: 0.75rem;
+      scroll-margin-top: 120px;
       
       .dark & {
         border-bottom-color: $border-dark;
@@ -226,10 +293,34 @@ $transition-slow: 500ms;
     
     h3 {
       font-size: clamp(1.5rem, 3vw, 2rem);
+      scroll-margin-top: 120px;
+    }
+    
+    h4, h5, h6 {
+      scroll-margin-top: 120px;
     }
     
     h4 {
       font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+    }
+
+    h1.active-heading,
+    h2.active-heading,
+    h3.active-heading,
+    h4.active-heading,
+    h5.active-heading,
+    h6.active-heading {
+      position: relative;
+      background: linear-gradient(90deg, rgba($color-primary, 0.12), transparent);
+      border-radius: 0.75rem;
+      padding-left: 1rem;
+      box-shadow: 0 10px 30px rgba($color-primary, 0.1);
+      transition: background $transition-fast $transition-smooth, box-shadow $transition-fast $transition-smooth;
+
+      .dark & {
+        background: linear-gradient(90deg, rgba($color-primary-light, 0.18), transparent);
+        box-shadow: 0 10px 30px rgba($color-primary-light, 0.18);
+      }
     }
     
     p {
@@ -388,6 +479,49 @@ $transition-slow: 500ms;
         font-weight: $font-semibold;
       }
     }
+
+    @media (max-width: 640px) {
+      line-height: 1.7;
+      font-size: 1rem;
+      padding-bottom: calc(100px + env(safe-area-inset-bottom, 0));
+
+      h1, h2, h3, h4 {
+        margin-top: 1.75rem;
+        margin-bottom: 0.9rem;
+      }
+
+      h1 {
+        font-size: clamp(1.75rem, 6vw, 2.25rem);
+        padding-bottom: 0.75rem;
+      }
+
+      h2 {
+        font-size: clamp(1.5rem, 5vw, 2rem);
+        padding-bottom: 0.5rem;
+      }
+
+      p {
+        margin-bottom: 1rem;
+        font-size: 1rem;
+      }
+
+      blockquote {
+        margin: 1.5rem 0;
+        padding: 1rem 1.25rem 1rem 2rem;
+        font-size: 1rem;
+      }
+
+      ul,
+      ol {
+        margin: 1rem 0;
+        padding-left: 1.25rem;
+
+        li {
+          margin-bottom: 0.5rem;
+          line-height: 1.6;
+        }
+      }
+    }
   }
 
   // ========================================
@@ -482,3 +616,324 @@ $transition-slow: 500ms;
   }
 }
 
+// ========================================
+// 📑 段落導航 (Table of Contents)
+// ========================================
+
+// 桌面版：懸浮側邊欄
+.toc-sidebar {
+  position: fixed;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  width: 280px;
+  max-height: 70vh;
+  display: none;
+  
+  @media (min-width: 1024px) {
+    display: block;
+  }
+}
+
+.toc-container {
+  background: $glass-light;
+  backdrop-filter: blur(12px);
+  border: 1px solid $border-light;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: $shadow-lg;
+  overflow-y: auto;
+  max-height: 100%;
+  
+  .dark & {
+    background: $glass-dark;
+    border-color: $border-dark;
+  }
+  
+  // 自訂滾動條
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba($color-primary, 0.3);
+    border-radius: 3px;
+    
+    &:hover {
+      background: rgba($color-primary, 0.5);
+    }
+  }
+}
+
+.toc-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: $text-light-primary;
+  margin-bottom: 1rem;
+  
+  .dark & {
+    color: $text-dark-primary;
+  }
+  
+  svg {
+    color: $color-primary;
+    
+    .dark & {
+      color: $color-primary-light;
+    }
+  }
+}
+
+.toc-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.toc-link {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: $text-light-secondary;
+  text-decoration: none;
+  transition: all $transition-fast $transition-smooth;
+  
+  .dark & {
+    color: $text-dark-secondary;
+  }
+  
+  &:hover {
+    background: rgba($color-primary, 0.1);
+    color: $text-light-primary;
+    
+    .dark & {
+      background: rgba($color-primary-light, 0.15);
+      color: $text-dark-primary;
+    }
+  }
+  
+  &.toc-link-active {
+    background: rgba($color-primary, 0.15);
+    color: $color-primary;
+    font-weight: 600;
+    border-left: 4px solid $color-primary;
+    
+    .dark & {
+      background: rgba($color-primary-light, 0.2);
+      color: $color-primary-light;
+      border-left-color: $color-primary-light;
+    }
+  }
+}
+
+// 手機版：底部導航按鈕
+.toc-mobile-toggle {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: $glass-light;
+  backdrop-filter: blur(12px);
+  border-top: 1px solid $border-light;
+  padding: 1rem 1rem calc(1.25rem + env(safe-area-inset-bottom, 0));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all $transition-normal $transition-smooth;
+  pointer-events: auto;
+  
+  @media (min-width: 1024px) {
+    display: none;
+  }
+  
+  .dark & {
+    background: $glass-dark;
+    border-top-color: $border-dark;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+  }
+  
+  .toc-mobile-toggle-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: $text-light-primary;
+    font-size: 0.875rem;
+    font-weight: 600;
+    
+    .dark & {
+      color: $text-dark-primary;
+    }
+    
+    svg {
+      color: $color-primary;
+      flex-shrink: 0;
+      
+      .dark & {
+        color: $color-primary-light;
+      }
+    }
+
+  }
+  
+  .toc-mobile-toggle-icon {
+    color: $text-light-secondary;
+    transition: transform $transition-fast $transition-smooth;
+    
+    .dark & {
+      color: $text-dark-secondary;
+    }
+    
+    &.toc-mobile-toggle-icon-open {
+      transform: rotate(180deg);
+    }
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
+  
+  &.toc-mobile-toggle-open {
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.18);
+  }
+}
+
+// 手機版：遮罩層（半透明，不完全遮擋）
+.toc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+  z-index: 45;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity $transition-normal $transition-smooth;
+  
+  @media (min-width: 1024px) {
+    display: none;
+  }
+  
+  &.toc-overlay-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+// 手機版：底部抽屜面板
+.toc-mobile-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 60vh;
+  background: $bg-light-card;
+  border-radius: 1.5rem 1.5rem 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
+  z-index: 55;
+  transform: translateY(100%);
+  transition: transform $transition-normal $transition-smooth;
+  overflow: hidden;
+  display: block;
+  pointer-events: none;
+  
+  @media (min-width: 1024px) {
+    display: none;
+  }
+  
+  .dark & {
+    background: $bg-dark-card;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+  }
+  
+  &.toc-mobile-panel-open {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  
+  .toc-container {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    height: 100%;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .toc-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 1.5rem 0.5rem;
+    flex-shrink: 0;
+    
+    // 拖動指示器
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 4px;
+      background: $text-light-muted;
+      border-radius: 2px;
+      opacity: 0.3;
+      
+      .dark & {
+        background: $text-dark-muted;
+      }
+    }
+  }
+  
+  .toc-nav {
+    overflow-y: auto;
+    padding: 1rem 1.5rem calc(5rem + env(safe-area-inset-bottom, 0));
+    flex: 1;
+    
+    // 自訂滾動條
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: rgba($color-primary, 0.3);
+      border-radius: 2px;
+      
+      &:hover {
+        background: rgba($color-primary, 0.5);
+      }
+    }
+  }
+  
+  .toc-close-btn {
+    display: none; // 不需要關閉按鈕，點擊遮罩或再次點擊按鈕即可關閉
+  }
+}
+
+// ========================================
+// 🦶 Footer 樣式調整
+// ========================================
+// 只在文章頁面（有段落導航）時才為 footer 增加底部 padding
+body.has-toc-mobile .site-footer {
+  // 手機版：為底部段落導航按鈕預留空間
+  @media (max-width: 1023px) {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+  }
+}
