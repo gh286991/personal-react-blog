@@ -1,26 +1,9 @@
 import type { Post } from '../content';
-import { useMemo } from 'react';
-import DOMPurify from 'dompurify';
-import parse from 'html-react-parser';
-
 interface PostPageProps {
   post: Post;
 }
 
 export function PostPage({ post }: PostPageProps) {
-  const safeHtml = useMemo(() => {
-    // 伺服端已使用 sanitize-html 清理；此處在瀏覽器再做一次防禦性清理
-    if (typeof window === 'undefined') {
-      return post.contentHtml;
-    }
-    return DOMPurify.sanitize(post.contentHtml, {
-      // 嚴格基線：允許必要連結與圖片屬性，與伺服端配置對齊
-      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+\-.]+(?:[^a-z+\-.:]|$))/i,
-    });
-  }, [post.contentHtml]);
-  
-  const content = useMemo(() => parse(safeHtml), [safeHtml]);
-
   return (
     <article className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 animate-fade-in-up">
       {/* Gradient Top Border */}
@@ -103,11 +86,12 @@ export function PostPage({ post }: PostPageProps) {
         </header>
 
         {/* Article Content with Custom Prose Styles */}
-        <div className="prose-custom">
-          {content}
-        </div>
+        {/* 內容已在伺服端經過 sanitize-html 處理，這裡直接渲染即可避免額外依賴 */}
+        <div
+          className="prose-custom"
+          dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+        />
       </div>
     </article>
   );
 }
-

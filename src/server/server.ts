@@ -162,13 +162,13 @@ function getMeta(props: AppProps) {
   if (props.page === 'detail' && props.post) {
     return {
       title: props.post.title,
-      description: props.post.summary ?? 'React SSR Blog',
+      description: props.post.summary ?? 'tomslab.dev｜日編驛 (The Build Station) - 日常編譯開發筆記',
     };
   }
 
   return {
-    title: '我的極簡 React 部落格',
-    description: '用 React + Express 打造的 Markdown SSR 部落格',
+    title: 'tomslab.dev｜日編驛 (The Build Station) - 日常編譯開發筆記',
+    description: '日常編譯開發筆記，記錄程式碼與想法的編譯過程',
   };
 }
 

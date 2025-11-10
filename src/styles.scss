@@ -1,3 +1,5 @@
+@use "sass:color";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -261,11 +263,11 @@ $transition-slow: 500ms;
       font-family: $font-mono;
       font-size: 0.9em;
       font-weight: $font-medium;
-      background: lighten($color-primary, 45%);
+      background: color.adjust($color-primary, $lightness: 45%);
       color: $color-primary-dark;
       padding: 0.25rem 0.5rem;
       border-radius: 6px;
-      border: 1px solid lighten($color-primary, 35%);
+      border: 1px solid color.adjust($color-primary, $lightness: 35%);
       box-shadow: $shadow-sm;
       
       .dark & {

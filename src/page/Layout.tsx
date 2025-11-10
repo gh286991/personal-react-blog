@@ -25,7 +25,8 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                   className="group relative text-2xl md:text-3xl font-bold text-slate-900 dark:text-white font-serif tracking-tight"
                 >
                   <span className="relative inline-block">
-                    BLOG
+                    <span className="hidden sm:inline">tomslab.dev｜日編驛</span>
+                    <span className="sm:hidden">日編驛</span>
                     <span className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-primary-600 via-accent to-primary-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
                   </span>
                 </a>
@@ -83,7 +84,12 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
 
                 {/* Main Title with Gradient */}
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white mb-6 md:mb-8 tracking-tight leading-tight animate-fade-in">
-                  {title ?? 'My React SSR Blog'}
+                  {title ?? (
+                    <>
+                      <span className="block">日編驛</span>
+                      <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-slate-500 dark:text-slate-400 mt-2">The Build Station</span>
+                    </>
+                  )}
                   <div className="h-1 w-32 md:w-40 mx-auto mt-6 bg-gradient-to-r from-transparent via-primary-600 to-transparent"></div>
                 </h1>
 
@@ -134,9 +140,9 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                 <div className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
                   <span className="text-xs font-semibold uppercase tracking-wider gradient-text">分類</span>
                   <div className="flex gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <span>⚙️ 架構</span>
-                    <span>📝 產品</span>
-                    <span>🧪 實驗</span>
+                    <span>🚀 MVP</span>
+                    <span>💻 軟體開發</span>
+                    <span>🔧 工具</span>
                   </div>
                 </div>
 

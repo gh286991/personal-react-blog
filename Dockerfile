@@ -16,7 +16,8 @@ COPY scripts ./scripts
 COPY posts ./posts
 COPY index.html ./
 
-# Build the application
+# Build the application in production mode
+ENV NODE_ENV=production
 RUN bun run build
 
 # Debug: List build output
@@ -34,12 +35,11 @@ RUN bun install --production && \
 ### Runtime stage: minimal bun slim runtime
 FROM oven/bun:1.1.22-slim AS runner
 WORKDIR /app
+ENV PATH="/app/node_modules/.bin:${PATH}"
 
 ENV NODE_ENV=production \
     CONTENT_BASE=/app/dist \
-    PORT=3000 \
-    BUN_JSC_forceGCSlowPaths=true \
-    BUN_JSC_useJIT=false
+    PORT=3000
 
 # Copy only production dependencies and built files
 COPY --from=builder /app/package.json ./
@@ -48,5 +48,5 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-# 使用記憶體優化標誌運行
+# 使用 --smol 標誌以優化記憶體使用
 CMD ["bun", "--smol", "dist/server/server.js"]

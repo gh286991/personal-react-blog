@@ -6,9 +6,9 @@ import { PostPage } from './page/PostPage';
 
 export function App({ page, posts, post }: AppProps) {
   const isList = page === 'list';
-  const pageTitle = isList ? '技術思考與實踐分享' : post?.title ?? '文章未找到';
+  const pageTitle = isList ? '日編驛' : post?.title ?? '文章未找到';
   const description = isList
-    ? '分享前端架構、效能優化與開發實踐的深度思考'
+    ? '日常編譯開發筆記，記錄程式碼與想法的編譯過程'
     : post?.summary ?? '找不到文章內容';
 
   return (
