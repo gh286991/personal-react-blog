@@ -7,5 +7,6 @@
     "sourceMap": false
   },
   "include": ["server/server.ts", "shared/content.ts", "shared/types.ts", "shared/security/**/*.ts"],
+  "files": ["frontend/router.ts"],
   "exclude": ["frontend/**/*", "server/entry-server.tsx"]
 }

@@ -4,9 +4,10 @@ import { pathToFileURL } from 'node:url';
 import express from 'express';
 import type { ViteDevServer } from 'vite';
 
-import type { AppProps } from '../shared/types.js';
+import type { AppProps, RouteMatch } from '../shared/types.js';
 import type { PostSummary } from '../shared/types.js';
 import { clearContentCaches, isLowMemoryMode, loadPost, loadPostSummaries } from '../shared/content.js';
+import { matchRoute } from '../frontend/router.js';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -67,39 +68,6 @@ async function createServer() {
     }));
   }
 
-  app.get('/', async (req, res) => {
-    const posts = await loadPostSummaries();
-    const props: AppProps = { page: 'list', posts };
-    await renderPage(req, res, 200, props, { vite, template, serverRender });
-  });
-
-  app.get('/about', async (req, res) => {
-    const props: AppProps = { page: 'about', posts: [], post: null };
-    await renderPage(req, res, 200, props, { vite, template, serverRender });
-  });
-
-  app.get('/posts', async (req, res) => {
-    const posts = await loadPostSummaries();
-    const props: AppProps = { page: 'archive', posts, post: null };
-    await renderPage(req, res, 200, props, { vite, template, serverRender });
-  });
-
-  app.get('/posts/:slug', async (req, res) => {
-    const post = await loadPost(req.params.slug);
-    if (!post) {
-      const props: AppProps = {
-        page: 'not-found',
-        posts: [],
-        post: null,
-      };
-      await renderPage(req, res, 404, props, { vite, template, serverRender });
-      return;
-    }
-
-    const props: AppProps = { page: 'detail', posts: [], post };
-    await renderPage(req, res, 200, props, { vite, template, serverRender });
-  });
-
   app.get('/feed.xml', async (req, res) => {
     try {
       const posts = await loadPostSummaries();
@@ -116,12 +84,58 @@ async function createServer() {
     }
   });
 
-  app.use(async (req, res) => {
-    const props: AppProps = { page: 'not-found', posts: [], post: null };
-    await renderPage(req, res, 404, props, { vite, template, serverRender });
+  app.get(/^\/(?!feed\.xml).*/, async (req, res) => {
+    const route = matchRoute(req.path);
+    const { props, status } = await buildPropsForRoute(route);
+    await renderPage(req, res, status, props, { vite, template, serverRender });
   });
 
   return app;
+}
+
+async function buildPropsForRoute(route: RouteMatch): Promise<{
+  props: AppProps;
+  status: number;
+}> {
+  if (route.kind === 'list' || route.kind === 'archive') {
+    const posts = await loadPostSummaries();
+    return {
+      status: 200,
+      props: { route, posts, post: null },
+    };
+  }
+
+  if (route.kind === 'detail') {
+    if (!route.slug) {
+      return {
+        status: 404,
+        props: { route: { kind: 'not-found' }, posts: [], post: null },
+      };
+    }
+    const post = await loadPost(route.slug);
+    if (!post) {
+      return {
+        status: 404,
+        props: { route: { kind: 'not-found' }, posts: [], post: null },
+      };
+    }
+    return {
+      status: 200,
+      props: { route, posts: [], post },
+    };
+  }
+
+  if (route.kind === 'static') {
+    return {
+      status: 200,
+      props: { route, posts: [], post: null },
+    };
+  }
+
+  return {
+    status: 404,
+    props: { route: { kind: 'not-found' }, posts: [], post: null },
+  };
 }
 
 async function renderPage(
@@ -155,9 +169,10 @@ async function renderPage(
 
     const { html } = await render(props);
     // 優化：只在列表頁傳遞必要的摘要資料，詳情頁不傳遞 posts 陣列
-    const clientProps: AppProps = (props.page === 'list' || props.page === 'archive')
-      ? props 
-      : { page: props.page, posts: [], post: props.post };
+    const shouldIncludePosts = props.route.kind === 'list' || props.route.kind === 'archive';
+    const clientProps: AppProps = shouldIncludePosts
+      ? props
+      : { route: props.route, posts: [], post: props.post };
     
     // 優化：使用單次字串操作減少記憶體分配
     const { title, description } = getMeta(props);
@@ -187,21 +202,28 @@ async function renderPage(
 }
 
 function getMeta(props: AppProps) {
-  if (props.page === 'detail' && props.post) {
+  const page = props.route.kind;
+  if (page === 'detail' && props.post) {
     return {
       title: props.post.title,
       description: props.post.summary ?? 'tomslab.dev｜湯編驛 (Tom\'s lab) - 日常編譯開發筆記',
     };
   }
 
-  if (props.page === 'about') {
+  if (page === 'static') {
+    if (props.route.staticPage === 'about') {
+      return {
+        title: '關於我 - tomslab.dev｜湯編驛 (Tom\'s lab)',
+        description: '關於 Tom - 日常編譯開發筆記，記錄程式碼與想法的編譯過程',
+      };
+    }
     return {
-      title: '關於我 - tomslab.dev｜湯編驛 (Tom\'s lab)',
-      description: '關於 Tom - 日常編譯開發筆記，記錄程式碼與想法的編譯過程',
+      title: '靜態頁面 - tomslab.dev｜湯編驛 (Tom\'s lab)',
+      description: '靜態內容頁面',
     };
   }
 
-  if (props.page === 'archive') {
+  if (page === 'archive') {
     return {
       title: '文章列表 - tomslab.dev｜湯編驛 (Tom\'s lab)',
       description: '瀏覽全部文章與標籤，快速找到想看的內容',
