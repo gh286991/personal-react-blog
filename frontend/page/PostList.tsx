@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { PostSummary } from '../content';
+import type { PostSummary } from '../../shared/types.js';
 
 interface PostListProps {
   posts: PostSummary[];

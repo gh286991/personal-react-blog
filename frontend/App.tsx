@@ -1,8 +1,7 @@
-import type { Post } from './content';
-import type { AppProps } from './types';
-import { Layout } from './page/Layout';
-import { PostList } from './page/PostList';
-import { PostPage } from './page/PostPage';
+import type { AppProps } from '../shared/types.js';
+import { Layout } from './page/Layout.js';
+import { PostList } from './page/PostList.js';
+import { PostPage } from './page/PostPage.js';
 
 export function App({ page, posts, post }: AppProps) {
   const isList = page === 'list';

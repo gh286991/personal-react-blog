@@ -1,8 +1,8 @@
 import React from 'react';
 import { hydrateRoot } from 'react-dom/client';
 
-import App from './App';
-import type { AppProps } from './types';
+import App from './App.js';
+import type { AppProps } from '../shared/types.js';
 declare global {
   interface Window {
     __INITIAL_DATA__?: AppProps;

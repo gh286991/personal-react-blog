@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { GrayMatterFile } from 'gray-matter';
-import { sanitizeMarkdownHtml, sanitizePlainText, sanitizeSlug } from './security/contentSanitizers';
+import type { Post, PostSummary } from './types.js';
+import { sanitizeMarkdownHtml, sanitizePlainText, sanitizeSlug } from './security/contentSanitizers.js';
 
 // 動態載入 gray-matter（只在需要時載入）
 type MatterFunction = (input: string) => GrayMatterFile<string>;
@@ -27,21 +28,6 @@ const SUMMARY_CACHE_MAX_SIZE = LOW_MEMORY_MODE ? 0 : resolveSummaryCacheSize();
 const HTML_CACHE_ENABLED = !LOW_MEMORY_MODE && MAX_HTML_CACHE_SIZE > 0;
 const SUMMARY_CACHE_ENABLED = !LOW_MEMORY_MODE && SUMMARY_CACHE_MAX_SIZE > 0;
 export const isLowMemoryMode = LOW_MEMORY_MODE;
-
-export interface PostSummary {
-  slug: string;
-  title: string;
-  date: Date;
-  lastUpdated: Date;
-  summary?: string;
-  readingMinutes?: number;
-  tags: string[];
-  category: string;
-}
-
-export interface Post extends PostSummary {
-  contentHtml: string;
-}
 
 interface SummaryCacheEntry {
   mtimeMs: number;

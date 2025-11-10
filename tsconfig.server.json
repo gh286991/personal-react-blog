@@ -6,6 +6,6 @@
     "target": "es2020",
     "sourceMap": false
   },
-  "include": ["src/server/server.ts", "src/content.ts", "src/types.ts", "src/security/**/*.ts"],
-  "exclude": ["src/entry-client.tsx", "src/server/entry-server.tsx"]
+  "include": ["server/server.ts", "shared/content.ts", "shared/types.ts", "shared/security/**/*.ts"],
+  "exclude": ["frontend/**/*", "server/entry-server.tsx"]
 }

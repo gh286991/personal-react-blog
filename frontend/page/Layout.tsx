@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ThemeToggle } from '../components/ThemeToggle';
+import { ThemeToggle } from '../components/ThemeToggle.js';
 
 interface LayoutProps {
   title?: string;

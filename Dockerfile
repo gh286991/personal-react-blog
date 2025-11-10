@@ -11,9 +11,12 @@ RUN bun install
 # Copy only necessary files for build
 COPY tsconfig*.json vite.config.ts ./
 COPY tailwind.config.js postcss.config.js ./
-COPY src ./src
+COPY frontend ./frontend
+COPY server ./server
+COPY shared ./shared
 COPY scripts ./scripts
 COPY posts ./posts
+COPY public ./public
 COPY index.html ./
 
 # Build the application in production mode

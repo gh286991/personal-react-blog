@@ -15,5 +15,12 @@ export default defineConfig(({ isSsrBuild }) => ({
           input: path.resolve(process.cwd(), 'index.html'),
         },
   },
+  resolve: {
+    alias: {
+      '@frontend': path.resolve(process.cwd(), 'frontend'),
+      '@server': path.resolve(process.cwd(), 'server'),
+      '@shared': path.resolve(process.cwd(), 'shared'),
+    },
+  },
   appType: 'custom',
 }));

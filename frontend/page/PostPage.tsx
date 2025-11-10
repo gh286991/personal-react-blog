@@ -1,4 +1,4 @@
-import type { Post } from '../content';
+import type { Post } from '../../shared/types.js';
 interface PostPageProps {
   post: Post;
 }

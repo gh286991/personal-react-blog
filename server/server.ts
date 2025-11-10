@@ -4,8 +4,8 @@ import { pathToFileURL } from 'node:url';
 import express from 'express';
 import type { ViteDevServer } from 'vite';
 
-import type { AppProps } from '../types';
-import { clearContentCaches, isLowMemoryMode, loadPost, loadPostSummaries } from '../content';
+import type { AppProps } from '../shared/types.js';
+import { clearContentCaches, isLowMemoryMode, loadPost, loadPostSummaries } from '../shared/content.js';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -118,7 +118,7 @@ async function renderPage(
         req.originalUrl,
         rawTemplate,
       );
-      render = (await context.vite.ssrLoadModule('/src/server/entry-server.tsx'))
+      render = (await context.vite.ssrLoadModule('/server/entry-server.tsx'))
         .render;
     } else {
       htmlTemplate = context.template;

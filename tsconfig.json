@@ -1,7 +1,13 @@
 {
   "compilerOptions": {
-    "rootDir": "./src",
+    "rootDir": ".",
     "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@frontend/*": ["frontend/*"],
+      "@server/*": ["server/*"],
+      "@shared/*": ["shared/*"]
+    },
     "module": "commonjs",
     "moduleResolution": "node",
     "target": "es2020",
@@ -16,5 +22,5 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["frontend/**/*.ts", "frontend/**/*.tsx", "server/**/*.ts", "server/**/*.tsx", "shared/**/*.ts"]
 }
