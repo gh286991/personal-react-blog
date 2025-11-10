@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Sparkles, Rocket, Laptop, Wrench, Rss } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 
 interface LayoutProps {
@@ -50,6 +51,14 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                   </a>
                   
                   <a 
+                    href="/about" 
+                    className="relative text-sm md:text-base font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 group"
+                  >
+                    <span>關於</span>
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-600 dark:bg-primary-400 group-hover:w-full transition-all duration-300"></span>
+                  </a>
+                  
+                  <a 
                     href="https://github.com/tomjhuang" 
                     target="_blank" 
                     rel="noreferrer"
@@ -77,8 +86,9 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
               <div className="text-center max-w-4xl mx-auto">
                 {/* Eyebrow Text */}
                 <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary-100 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 mb-6 md:mb-8 animate-fade-in">
+                  <Sparkles className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   <span className="text-xs md:text-sm font-semibold uppercase tracking-wider gradient-text">
-                    ✨ Minimal SSR · Markdown · React 19
+                    Minimal SSR · Markdown · React 19
                   </span>
                 </div>
 
@@ -140,9 +150,18 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                 <div className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
                   <span className="text-xs font-semibold uppercase tracking-wider gradient-text">分類</span>
                   <div className="flex gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <span>🚀 MVP</span>
-                    <span>💻 軟體開發</span>
-                    <span>🔧 工具</span>
+                    <span className="flex items-center gap-1">
+                      <Rocket className="w-3.5 h-3.5" />
+                      MVP
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Laptop className="w-3.5 h-3.5" />
+                      軟體開發
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Wrench className="w-3.5 h-3.5" />
+                      工具
+                    </span>
                   </div>
                 </div>
 
@@ -150,7 +169,8 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                   href="/feed.xml" 
                   className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
                 >
-                  📡 RSS 訂閱
+                  <Rss className="w-4 h-4" />
+                  RSS 訂閱
                 </a>
               </div>
             </div>
@@ -199,8 +219,8 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
       <footer className="relative bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-primary-600 to-transparent"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p className="text-center text-sm text-slate-500 dark:text-slate-400 font-serif">
-            © {currentYear} | Built with React, Vite & Bun ✨
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400 font-serif flex items-center justify-center gap-2">
+            © {currentYear} | Built with React, Vite & Bun <Sparkles className="w-4 h-4" />
           </p>
         </div>
       </footer>

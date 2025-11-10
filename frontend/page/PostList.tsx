@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FileText } from 'lucide-react';
 import type { PostSummary } from '../../shared/types.js';
 
 interface PostListProps {
@@ -126,8 +127,8 @@ export function PostList({ posts }: PostListProps) {
       {/* Posts Grid - Bento Box Layout */}
       {pagePosts.length === 0 ? (
         <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-12 md:p-16 text-center border-2 border-dashed border-slate-300 dark:border-slate-600">
-          <div className="absolute inset-0 flex items-center justify-center opacity-5 text-9xl">
-            📝
+          <div className="absolute inset-0 flex items-center justify-center opacity-5">
+            <FileText className="w-48 h-48" />
           </div>
           <p className="relative text-lg text-slate-600 dark:text-slate-400">
             還沒有符合篩選條件的文章！試著切換標籤或分類看看。

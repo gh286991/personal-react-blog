@@ -72,6 +72,11 @@ async function createServer() {
     await renderPage(req, res, 200, props, { vite, template, serverRender });
   });
 
+  app.get('/about', async (req, res) => {
+    const props: AppProps = { page: 'about', posts: [], post: null };
+    await renderPage(req, res, 200, props, { vite, template, serverRender });
+  });
+
   app.get('/posts/:slug', async (req, res) => {
     const post = await loadPost(req.params.slug);
     if (!post) {
@@ -163,6 +168,13 @@ function getMeta(props: AppProps) {
     return {
       title: props.post.title,
       description: props.post.summary ?? 'tomslab.dev｜日編驛 (The Build Station) - 日常編譯開發筆記',
+    };
+  }
+
+  if (props.page === 'about') {
+    return {
+      title: '關於我 - tomslab.dev｜日編驛 (The Build Station)',
+      description: '關於 Tom - 日常編譯開發筆記，記錄程式碼與想法的編譯過程',
     };
   }
 

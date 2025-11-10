@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Sun, Moon } from 'lucide-react';
 
 function getSystemPreference(): boolean {
   if (typeof window === 'undefined') return false;
@@ -78,9 +79,9 @@ export function ThemeToggle() {
       title={isDark ? '切換到淺色模式' : '切換到深色模式'}
     >
       {isDark ? (
-        <span className="theme-icon">☀️</span>
+        <Sun className="w-5 h-5" />
       ) : (
-        <span className="theme-icon">🌙</span>
+        <Moon className="w-5 h-5" />
       )}
     </button>
   );

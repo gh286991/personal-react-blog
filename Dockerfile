@@ -9,15 +9,8 @@ COPY package.json package-lock.json ./
 RUN bun install
 
 # Copy only necessary files for build
-COPY tsconfig*.json vite.config.ts ./
-COPY tailwind.config.js postcss.config.js ./
-COPY frontend ./frontend
-COPY server ./server
-COPY shared ./shared
-COPY scripts ./scripts
-COPY posts ./posts
-COPY public ./public
-COPY index.html ./
+COPY tsconfig*.json vite.config.ts tailwind.config.js postcss.config.js index.html ./
+COPY frontend server shared scripts posts public ./
 
 # Build the application in production mode
 ENV NODE_ENV=production

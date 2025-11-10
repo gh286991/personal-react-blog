@@ -1,4 +1,4 @@
-export type PageKind = 'list' | 'detail' | 'not-found';
+export type PageKind = 'list' | 'detail' | 'about' | 'not-found';
 
 export interface PostSummary {
   slug: string;
