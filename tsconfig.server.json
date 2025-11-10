@@ -6,7 +6,15 @@
     "target": "es2020",
     "sourceMap": false
   },
-  "include": ["server/server.ts", "shared/content.ts", "shared/types.ts", "shared/security/**/*.ts"],
+  "include": [
+    "server/server.ts",
+    "server/app.ts",
+    "server/controllers/**/*.ts",
+    "server/services/**/*.ts",
+    "shared/content.ts",
+    "shared/types.ts",
+    "shared/security/**/*.ts"
+  ],
   "files": ["frontend/router.ts"],
   "exclude": ["frontend/**/*", "server/entry-server.tsx"]
 }
