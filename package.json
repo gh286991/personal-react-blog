@@ -1,7 +1,7 @@
 {
   "name": "personal-react-blog",
   "version": "1.0.0",
-  "description": "tomslab.dev｜日編驛 (The Build Station) - Minimal React SSR blog powered by Markdown posts.",
+  "description": "tomslab.dev｜湯編驛 (Tom's lab) - Minimal React SSR blog powered by Markdown posts.",
   "main": "dist/server/server.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development node scripts/run-server.mjs dev",

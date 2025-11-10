@@ -12,7 +12,7 @@ export function App({ page, posts, post }: AppProps) {
   let description: string;
   
   if (isList) {
-    pageTitle = '日編驛';
+    pageTitle = '湯編驛';
     description = '日常編譯開發筆記，記錄程式碼與想法的編譯過程';
   } else if (isAbout) {
     pageTitle = '關於我';

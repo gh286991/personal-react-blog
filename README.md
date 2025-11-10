@@ -1,6 +1,6 @@
-# tomslab.dev｜日編驛 (The Build Station)
+# tomslab.dev｜湯編驛 (Tom's lab)
 
-日編驛是一個極簡、低記憶體消耗的 React SSR 部落格，用於記錄日常開發筆記與程式碼編譯過程。文章以 Markdown 編寫並在伺服器端渲染 (SSR)。
+湯編驛是一個極簡、低記憶體消耗的 React SSR 部落格，用於記錄日常開發筆記與程式碼編譯過程。文章以 Markdown 編寫並在伺服器端渲染 (SSR)。
 
 ## 為什麼這個架構很省資源？
 

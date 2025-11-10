@@ -26,8 +26,8 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                   className="group relative text-2xl md:text-3xl font-bold text-slate-900 dark:text-white font-serif tracking-tight"
                 >
                   <span className="relative inline-block">
-                    <span className="hidden sm:inline">tomslab.dev｜日編驛</span>
-                    <span className="sm:hidden">日編驛</span>
+                    <span className="hidden sm:inline">tomslab.dev｜湯編驛</span>
+                    <span className="sm:hidden">湯編驛</span>
                     <span className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-primary-600 via-accent to-primary-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
                   </span>
                 </a>
@@ -59,7 +59,7 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                   </a>
                   
                   <a 
-                    href="https://github.com/tomjhuang" 
+                    href="https://github.com/gh286991" 
                     target="_blank" 
                     rel="noreferrer"
                     className="relative text-sm md:text-base font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 group"
@@ -96,8 +96,8 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white mb-6 md:mb-8 tracking-tight leading-tight animate-fade-in">
                   {title ?? (
                     <>
-                      <span className="block">日編驛</span>
-                      <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-slate-500 dark:text-slate-400 mt-2">The Build Station</span>
+                      <span className="block">湯編驛</span>
+                      <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-slate-500 dark:text-slate-400 mt-2">Tom's lab</span>
                     </>
                   )}
                   <div className="h-1 w-32 md:w-40 mx-auto mt-6 bg-gradient-to-r from-transparent via-primary-600 to-transparent"></div>
@@ -123,7 +123,7 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                   </a>
                   
                   <a
-                    href="https://github.com/tomjhuang"
+                    href="https://github.com/gh286991"
                     target="_blank"
                     rel="noreferrer"
                     className="group inline-flex items-center gap-2 px-8 py-4 bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 font-semibold rounded-xl border-2 border-primary-600 dark:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-300 hover:scale-105"
@@ -143,12 +143,12 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex flex-wrap justify-between items-center gap-4">
                 <div className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-                  <span className="text-xs font-semibold uppercase tracking-wider gradient-text">關於</span>
-                  <span className="text-sm text-slate-600 dark:text-slate-400">輕量級 SSR · Markdown · React 19</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider gradient-text">技術棧</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">React 19 · SSR · Markdown</span>
                 </div>
 
                 <div className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-                  <span className="text-xs font-semibold uppercase tracking-wider gradient-text">分類</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider gradient-text">文章主題</span>
                   <div className="flex gap-2 text-sm text-slate-600 dark:text-slate-400">
                     <span className="flex items-center gap-1">
                       <Rocket className="w-3.5 h-3.5" />

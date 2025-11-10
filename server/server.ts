@@ -5,6 +5,7 @@ import express from 'express';
 import type { ViteDevServer } from 'vite';
 
 import type { AppProps } from '../shared/types.js';
+import type { PostSummary } from '../shared/types.js';
 import { clearContentCaches, isLowMemoryMode, loadPost, loadPostSummaries } from '../shared/content.js';
 
 const PORT = Number(process.env.PORT ?? 3000);
@@ -93,6 +94,22 @@ async function createServer() {
     await renderPage(req, res, 200, props, { vite, template, serverRender });
   });
 
+  app.get('/feed.xml', async (req, res) => {
+    try {
+      const posts = await loadPostSummaries();
+      const protocol = req.protocol;
+      const host = req.get('host') || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+      
+      const rssXml = generateRSSFeed(posts, baseUrl);
+      res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8');
+      res.send(rssXml);
+    } catch (error) {
+      console.error('[server] RSS feed generation failed', error);
+      res.status(500).send('Internal Server Error');
+    }
+  });
+
   app.use(async (req, res) => {
     const props: AppProps = { page: 'not-found', posts: [], post: null };
     await renderPage(req, res, 404, props, { vite, template, serverRender });
@@ -167,25 +184,87 @@ function getMeta(props: AppProps) {
   if (props.page === 'detail' && props.post) {
     return {
       title: props.post.title,
-      description: props.post.summary ?? 'tomslab.dev｜日編驛 (The Build Station) - 日常編譯開發筆記',
+      description: props.post.summary ?? 'tomslab.dev｜湯編驛 (Tom\'s lab) - 日常編譯開發筆記',
     };
   }
 
   if (props.page === 'about') {
     return {
-      title: '關於我 - tomslab.dev｜日編驛 (The Build Station)',
+      title: '關於我 - tomslab.dev｜湯編驛 (Tom\'s lab)',
       description: '關於 Tom - 日常編譯開發筆記，記錄程式碼與想法的編譯過程',
     };
   }
 
   return {
-    title: 'tomslab.dev｜日編驛 (The Build Station) - 日常編譯開發筆記',
+    title: 'tomslab.dev｜湯編驛 (Tom\'s lab) - 日常編譯開發筆記',
     description: '日常編譯開發筆記，記錄程式碼與想法的編譯過程',
   };
 }
 
 function escapeAttr(value: string) {
   return value.replace(/"/g, '&quot;');
+}
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function formatRSSDate(date: Date): string {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  const day = days[date.getUTCDay()];
+  const dayNum = String(date.getUTCDate()).padStart(2, '0');
+  const month = months[date.getUTCMonth()];
+  const year = date.getUTCFullYear();
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+  
+  return `${day}, ${dayNum} ${month} ${year} ${hours}:${minutes}:${seconds} GMT`;
+}
+
+function generateRSSFeed(posts: PostSummary[], baseUrl: string): string {
+  const siteTitle = 'tomslab.dev｜湯編驛 (Tom\'s lab)';
+  const siteDescription = '日常編譯開發筆記，記錄程式碼與想法的編譯過程';
+  const feedUrl = `${baseUrl}/feed.xml`;
+  const siteUrl = baseUrl;
+  // lastBuildDate 應該反映 feed 最後更新的時間（當前時間），而不是最新文章的日期
+  // 這樣 RSS 閱讀器才能正確偵測到 feed 的更新
+  const lastBuildDate = formatRSSDate(new Date());
+
+  const items = posts.map((post) => {
+    const postUrl = `${baseUrl}/posts/${post.slug}`;
+    const pubDate = formatRSSDate(post.date);
+    const description = post.summary ? escapeXml(post.summary) : '';
+    const title = escapeXml(post.title);
+
+    return `    <item>
+      <title>${title}</title>
+      <link>${postUrl}</link>
+      <guid isPermaLink="true">${postUrl}</guid>
+      <pubDate>${pubDate}</pubDate>
+      <description>${description}</description>
+    </item>`;
+  }).join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>${escapeXml(siteTitle)}</title>
+    <link>${siteUrl}</link>
+    <description>${escapeXml(siteDescription)}</description>
+    <language>zh-TW</language>
+    <lastBuildDate>${lastBuildDate}</lastBuildDate>
+    <atom:link href="${feedUrl}" rel="self" type="application/rss+xml"/>
+${items}
+  </channel>
+</rss>`;
 }
 
 function resolve(p: string) {

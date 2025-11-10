@@ -24,7 +24,7 @@ export function AboutPage() {
                 你好，我是 Tom
               </h2>
               <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed">
-                歡迎來到 <strong className="text-primary-600 dark:text-primary-400">日編驛 (The Build Station)</strong>！
+                歡迎來到 <strong className="text-primary-600 dark:text-primary-400">湯編驛 (Tom's lab)</strong>！
                 這裡是我記錄日常開發筆記與程式碼編譯過程的地方。
               </p>
             </section>
@@ -81,7 +81,7 @@ export function AboutPage() {
               </h2>
               <div className="flex flex-wrap gap-4">
                 <a
-                  href="https://github.com/tomjhuang"
+                  href="https://github.com/gh286991"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all duration-300 hover:scale-105"

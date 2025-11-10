@@ -1,64 +1,54 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <!-- 金色漸變 -->
-    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#d4af37;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#f4d03f;stop-opacity:0.9" />
+    <!-- 主色漸變 -->
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
     </linearGradient>
-    <!-- 藍色漸變 -->
-    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    <!-- 高光 -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#818cf8;stop-opacity:1" />
     </linearGradient>
   </defs>
   
-  <!-- 背景圓形（淺色） -->
-  <circle cx="50" cy="50" r="48" fill="#2563eb" opacity="0.08"/>
+  <!-- 背景（圓角矩形，現代感） -->
+  <rect width="100" height="100" rx="22" fill="url(#primaryGradient)"/>
   
-  <!-- 主體：實驗室燒杯 -->
+  <!-- 主體：編譯符號（簡化的齒輪 + 箭頭） -->
   <g transform="translate(50, 50)">
-    <!-- 燒杯外框（使用漸變） -->
-    <path d="M -18 -22 L -18 18 L 18 18 L 18 -22 Z" 
-          fill="none" 
-          stroke="url(#blueGradient)" 
-          stroke-width="2.5" 
-          stroke-linecap="round" 
-          stroke-linejoin="round"/>
-    
-    <!-- 燒杯底部（圓角） -->
-    <path d="M -18 18 Q -18 22 -12 22 L 12 22 Q 18 22 18 18" 
-          fill="none" 
-          stroke="url(#blueGradient)" 
-          stroke-width="2.5" 
-          stroke-linecap="round"/>
-    
-    <!-- 液體（金色漸變，更明顯） -->
-    <path d="M -16 14 Q -16 8 -8 4 Q 0 0 8 4 Q 16 8 16 14 L 16 16 L -16 16 Z" 
-          fill="url(#goldGradient)"/>
-    
-    <!-- 氣泡效果（簡化，小尺寸更清晰） -->
-    <circle cx="-6" cy="2" r="1.8" fill="#d4af37" opacity="0.7"/>
-    <circle cx="4" cy="-2" r="1.3" fill="#d4af37" opacity="0.6"/>
-    
-    <!-- 原子符號（科技感，簡化設計） -->
-    <g transform="translate(0, -32)">
-      <!-- 軌道環（簡化為單一橢圓，更清晰） -->
-      <ellipse cx="0" cy="0" rx="10" ry="5" 
-               fill="none" 
-               stroke="url(#blueGradient)" 
-               stroke-width="2" 
-               opacity="0.7" 
-               transform="rotate(45)"/>
-      <ellipse cx="0" cy="0" rx="10" ry="5" 
-               fill="none" 
-               stroke="url(#blueGradient)" 
-               stroke-width="2" 
-               opacity="0.7" 
-               transform="rotate(-45)"/>
+    <!-- 簡化齒輪（6個齒，更清晰） -->
+    <g>
+      <!-- 中心圓 -->
+      <circle cx="0" cy="0" r="12" fill="url(#accentGradient)" opacity="0.9"/>
       
-      <!-- 中心原子核 -->
-      <circle cx="0" cy="0" r="2.5" fill="url(#blueGradient)"/>
+      <!-- 齒輪外圈 -->
+      <circle cx="0" cy="0" r="20" fill="none" stroke="white" stroke-width="2.5" opacity="0.9"/>
+      
+      <!-- 6個齒（上下左右 + 對角） -->
+      <rect x="-2" y="-24" width="4" height="8" fill="white" rx="2" opacity="0.9"/>
+      <rect x="-2" y="16" width="4" height="8" fill="white" rx="2" opacity="0.9"/>
+      <rect x="-24" y="-2" width="8" height="4" fill="white" rx="2" opacity="0.9"/>
+      <rect x="16" y="-2" width="8" height="4" fill="white" rx="2" opacity="0.9"/>
+      <rect x="-17" y="-17" width="4" height="8" fill="white" rx="2" opacity="0.9" transform="rotate(45)"/>
+      <rect x="13" y="13" width="4" height="8" fill="white" rx="2" opacity="0.9" transform="rotate(45)"/>
+    </g>
+    
+    <!-- 編譯箭頭（從左到右，代表轉換/編譯） -->
+    <g transform="translate(0, 0)">
+      <path d="M -18 0 L -8 0 M -8 0 L -4 -4 M -8 0 L -4 4" 
+            fill="none" 
+            stroke="white" 
+            stroke-width="3" 
+            stroke-linecap="round" 
+            stroke-linejoin="round" 
+            opacity="0.95"/>
+      <path d="M 4 0 L 18 0" 
+            fill="none" 
+            stroke="white" 
+            stroke-width="3" 
+            stroke-linecap="round" 
+            opacity="0.95"/>
     </g>
   </g>
 </svg>
-
