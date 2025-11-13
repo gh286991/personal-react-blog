@@ -4,7 +4,7 @@ import { PostList } from './page/PostList.js';
 import { PostPage } from './page/PostPage.js';
 import { AboutPage } from './page/AboutPage.js';
 
-export function App({ route, posts, post }: AppProps) {
+export function App({ route, posts, post, config }: AppProps) {
   const page = route.kind;
   const isList = page === 'list';
   const isStatic = page === 'static';
@@ -18,14 +18,14 @@ export function App({ route, posts, post }: AppProps) {
   
   if (isList) {
     pageTitle = '湯編驛';
-    description = '日常編譯開發筆記，記錄程式碼與想法的編譯過程';
+    description = '開發筆記，記錄程式碼與想法的實踐過程';
   } else if (isArchive) {
     pageTitle = '文章列表';
     description = '瀏覽全部文章與標籤，快速找到想看的內容';
   } else if (isStatic) {
     if (isAbout) {
       pageTitle = '關於我';
-      description = '日常編譯開發筆記，記錄程式碼與想法的編譯過程';
+      description = '開發筆記，記錄程式碼與想法的實踐過程';
     } else {
       pageTitle = '靜態頁面';
       description = '網站靜態內容';
@@ -36,8 +36,14 @@ export function App({ route, posts, post }: AppProps) {
   }
 
   return (
-    <Layout title={pageTitle} description={description} variant={isList ? 'hero' : 'minimal'}>
-      {(isList || isArchive) && <PostList posts={posts} />}
+    <Layout 
+      title={pageTitle} 
+      description={description} 
+      variant={isList ? 'hero' : 'minimal'}
+      showSidebar={isList}
+    >
+      {isList && <PostList posts={posts} showFilters={config?.showFilters ?? false} />}
+      {isArchive && <PostList posts={posts} showFilters={true} />}
       {isAbout && <AboutPage />}
       {isDetail && post && <PostPage post={post} />}
       {isDetail && !post && <p>找不到文章，請回到首頁。</p>}

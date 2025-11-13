@@ -1,15 +1,17 @@
 import { useState, type ReactNode } from 'react';
 import { Sparkles, Rocket, Laptop, Wrench, Rss } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle.js';
+import { AuthorSidebar } from '../components/AuthorSidebar.js';
 
 interface LayoutProps {
   title?: string;
   description?: string;
   children: ReactNode;
   variant?: 'hero' | 'minimal';
+  showSidebar?: boolean;
 }
 
-export function Layout({ title, description, children, variant = 'hero' }: LayoutProps) {
+export function Layout({ title, description, children, variant = 'hero', showSidebar = false }: LayoutProps) {
   const currentYear = new Date().getFullYear();
   const [isInfoDrawerOpen, setIsInfoDrawerOpen] = useState(false);
   
@@ -81,7 +83,7 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                 <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary-100 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 mb-6 md:mb-8 animate-fade-in">
                   <Sparkles className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   <span className="text-xs md:text-sm font-semibold uppercase tracking-wider gradient-text">
-                    Minimal SSR · Markdown · React 19
+                    想法編譯 · 實作記錄 · 開發筆記
                   </span>
                 </div>
 
@@ -147,7 +149,7 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                       <Sparkles className="w-4 h-4" />
                       資訊重點
                     </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">技術棧 · 文章主題 · RSS</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">文章主題 · RSS</p>
                   </div>
                   <svg
                     className={`w-4 h-4 text-primary-600 dark:text-primary-300 transition-transform ${isInfoDrawerOpen ? 'rotate-180' : ''}`}
@@ -160,10 +162,6 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
                 </button>
                 {isInfoDrawerOpen && (
                   <div className="mt-2 space-y-1.5">
-                    <div className="rounded-xl px-3 py-1.5 bg-primary-50 dark:bg-primary-900/15 text-xs text-slate-600 dark:text-slate-300">
-                      <p className="font-semibold text-primary-700 dark:text-primary-300 mb-1">技術棧</p>
-                      <p>React 19 · SSR · Markdown</p>
-                    </div>
                     <div className="rounded-xl px-3 py-1.5 bg-primary-50 dark:bg-primary-900/15 text-xs text-slate-600 dark:text-slate-300">
                       <p className="font-semibold text-primary-700 dark:text-primary-300 mb-1">文章主題</p>
                       <div className="flex flex-wrap gap-2">
@@ -184,11 +182,6 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
               </div>
               {/* Desktop/tablet info bar */}
               <div className="hidden md:flex md:flex-wrap md:items-center md:justify-between gap-3">
-                <div className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-                  <span className="text-xs font-semibold uppercase tracking-wider gradient-text">技術棧</span>
-                  <span className="text-sm text-slate-600 dark:text-slate-400">React 19 · SSR · Markdown</span>
-                </div>
-
                 <div className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
                   <span className="text-xs font-semibold uppercase tracking-wider gradient-text">文章主題</span>
                   <div className="flex gap-2 text-sm text-slate-600 dark:text-slate-400">
@@ -258,9 +251,29 @@ export function Layout({ title, description, children, variant = 'hero' }: Layou
 
       {/* Main Content */}
       <main id="articles" className="flex-1 bg-stone-50 dark:bg-slate-900">
-        <div className={variant === 'hero' ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16'}>
-          {children}
-        </div>
+        {showSidebar ? (
+          <div className="py-12 md:py-16">
+            <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex gap-8 items-start">
+                {/* Main Content - Original width, left-aligned within flex container */}
+                <div className="flex-1 min-w-0">
+                  <div className="max-w-7xl">
+                    {children}
+                  </div>
+                </div>
+                
+                {/* Sidebar - Only on very large screens (2xl: 1536px+), normal flow, doesn't compress content */}
+                <div className="hidden 2xl:block w-80 flex-shrink-0">
+                  <AuthorSidebar />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className={variant === 'hero' ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16'}>
+            {children}
+          </div>
+        )}
       </main>
 
       {/* Footer with Gradient Accent */}

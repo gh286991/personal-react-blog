@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FileText, Filter } from 'lucide-react';
+import { FileText, Filter, Star } from 'lucide-react';
 import type { PostSummary } from '../../shared/types.js';
 
 interface PostListProps {
   posts: PostSummary[];
+  showFilters?: boolean;
 }
 
 const PAGE_SIZE = 6;
 
-export function PostList({ posts }: PostListProps) {
+export function PostList({ posts, showFilters = true }: PostListProps) {
   const tagStats = useMemo(() => {
+    if (!showFilters) return [];
     const counts: Record<string, number> = {};
     for (const post of posts) {
       for (const tag of post.tags) {
@@ -19,9 +21,10 @@ export function PostList({ posts }: PostListProps) {
     return Object.entries(counts)
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'zh-Hant'));
-  }, [posts]);
+  }, [posts, showFilters]);
 
   const categoryStats = useMemo(() => {
+    if (!showFilters) return [];
     const counts: Record<string, number> = {};
     for (const post of posts) {
       const category = post.category ?? '未分類';
@@ -30,7 +33,7 @@ export function PostList({ posts }: PostListProps) {
     return Object.entries(counts)
       .map(([category, count]) => ({ category, count }))
       .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category, 'zh-Hant'));
-  }, [posts]);
+  }, [posts, showFilters]);
 
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -58,18 +61,143 @@ export function PostList({ posts }: PostListProps) {
     }
   }, []);
 
-  const filteredPosts = posts.filter((post) => {
-    const tagMatch = selectedTag === 'all' || post.tags.includes(selectedTag);
-    const categoryMatch = selectedCategory === 'all' || post.category === selectedCategory;
-    return tagMatch && categoryMatch;
-  });
+  // 分離推薦文章和普通文章
+  const featuredPosts = useMemo(() => {
+    return posts.filter((post) => post.featured === true);
+  }, [posts]);
+
+  // 如果不需要篩選，直接使用按日期排序的文章（已經在後端排序）
+  const filteredPosts = useMemo(() => {
+    const allPosts = showFilters
+      ? posts.filter((post) => {
+          const tagMatch = selectedTag === 'all' || post.tags.includes(selectedTag);
+          const categoryMatch = selectedCategory === 'all' || post.category === selectedCategory;
+          return tagMatch && categoryMatch;
+        })
+      : posts; // 首頁直接顯示所有文章（已按日期排序）
+    
+    // 排除推薦文章，避免重複顯示
+    return allPosts.filter((post) => !post.featured);
+  }, [posts, showFilters, selectedTag, selectedCategory]);
 
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
   const pagePosts = filteredPosts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <div className="space-y-6 md:space-y-12">
+    <div className="space-y-8 md:space-y-16">
+      {/* Featured Posts Section */}
+      {featuredPosts.length > 0 && !showFilters && (
+        <div className="space-y-4">
+          {/* Featured Section Header */}
+          <div className="flex items-center gap-2 mb-2">
+            <Star className="w-4 h-4 text-primary-600 dark:text-primary-400 fill-current" />
+            <h2 className="text-lg md:text-xl font-semibold text-slate-900 dark:text-white">
+              推薦文章
+            </h2>
+          </div>
+          
+          {/* Featured Posts Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredPosts.map((post, index) => (
+              <article
+                key={post.slug}
+                className="group relative bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border-2 border-primary-200 dark:border-primary-700 hover:border-primary-400 dark:hover:border-primary-500 hover:scale-[1.02] hover:-translate-y-1 animate-fade-in-up"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                {/* Featured Badge */}
+                <div className="absolute top-4 right-4 z-10">
+                  <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-semibold rounded-full shadow-lg">
+                    <Star className="w-3 h-3 fill-current" />
+                    <span>推薦</span>
+                  </div>
+                </div>
+
+                {/* Gradient Top Border */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-600 via-accent to-primary-600"></div>
+                
+                {/* Hover Glow Effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                <div className="relative p-6 h-full flex flex-col">
+                  {/* Header */}
+                  <div className="mb-4">
+                    <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-3 leading-tight tracking-tight">
+                      <a
+                        href={`/posts/${post.slug}`}
+                        className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                      >
+                        {post.title}
+                      </a>
+                    </h3>
+                    <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                      <time dateTime={post.date.toISOString()}>
+                        {post.date.toLocaleDateString('zh-TW', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </time>
+                      {post.readingMinutes && (
+                        <>
+                          <span>·</span>
+                          <span>{post.readingMinutes} 分鐘</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  {post.summary && (
+                    <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 mb-6 leading-relaxed flex-1">
+                      {post.summary}
+                    </p>
+                  )}
+
+                  {/* Footer with Category and Tags */}
+                  <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                      <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-semibold rounded-lg shadow-sm">
+                        {post.category ?? '未分類'}
+                      </span>
+                      {post.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center px-3 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-medium rounded-lg border border-primary-200 dark:border-primary-700"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <a
+                      href={`/posts/${post.slug}`}
+                      className="inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold text-sm hover:gap-3 transition-all duration-300 group-hover:text-primary-700 dark:group-hover:text-primary-300"
+                    >
+                      <span>閱讀更多</span>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Divider between Featured and Regular Posts */}
+      {featuredPosts.length > 0 && !showFilters && filteredPosts.length > 0 && (
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-8">
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-4">
+            <FileText className="w-4 h-4" />
+            <span className="text-sm font-medium">所有文章</span>
+          </div>
+        </div>
+      )}
+
       {/* Filters Section with Modern Pill Design */}
+      {showFilters && (
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4 md:p-8 border border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between md:hidden">
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">篩選條件</p>
@@ -159,6 +287,7 @@ export function PostList({ posts }: PostListProps) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Posts Grid - Bento Box Layout */}
       {pagePosts.length === 0 ? (
