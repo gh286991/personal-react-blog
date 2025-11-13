@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { GrayMatterFile } from 'gray-matter';
-import type { Post, PostSummary } from '../shared/types.js';
+import type { Post, PostSummary, SiteConfig } from '../shared/types.js';
 import { sanitizeMarkdownHtml, sanitizePlainText, sanitizeSlug } from './security/contentSanitizers.js';
 
 // 動態載入 gray-matter（只在需要時載入）
@@ -270,6 +270,7 @@ function buildPostSummary(slug: string, matterFile: GrayMatterFile<string>, stat
   const tags = normalizeTags(data.tags);
   const category = normalizeCategory(data.category);
   const lastUpdated = resolveLastUpdatedDate(stat, data.updated ?? data.lastUpdated);
+  const featured = Boolean(data.featured || data.promoted || data.promote);
 
   return {
     slug,
@@ -280,6 +281,7 @@ function buildPostSummary(slug: string, matterFile: GrayMatterFile<string>, stat
     readingMinutes,
     tags,
     category,
+    featured,
   };
 }
 
@@ -494,3 +496,30 @@ export async function loadPost(slug: string): Promise<Post | null> {
     return null;
   }
 }
+export async function loadConfig(): Promise<SiteConfig> {
+  const configPath = path.resolve(CONTENT_BASE, '_config.md');
+  const defaultConfig: SiteConfig = {
+    showFilters: false, // 預設首頁不顯示篩選
+  };
+
+  if (!fs.existsSync(configPath)) {
+    return defaultConfig;
+  }
+
+  try {
+    const matter = await getMatter();
+    const fileContent = fs.readFileSync(configPath, 'utf-8');
+    const parsed = matter(fileContent);
+    const { data } = parsed;
+
+    const config: SiteConfig = {
+      showFilters: typeof data.showFilters === 'boolean' ? data.showFilters : defaultConfig.showFilters,
+    };
+
+    return config;
+  } catch (error) {
+    logContentError(`[content] Failed to read config file`, error);
+    return defaultConfig;
+  }
+}
+

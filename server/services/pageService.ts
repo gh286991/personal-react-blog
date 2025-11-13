@@ -1,6 +1,6 @@
 import type { AppProps, RouteMatch } from '../../shared/types.js';
 import type { PostSummary } from '../../shared/types.js';
-import { loadPost, loadPostSummaries } from '../content.js';
+import { loadPost, loadPostSummaries, loadConfig } from '../content.js';
 
 export interface RouteDataResult {
   props: AppProps;
@@ -8,11 +8,13 @@ export interface RouteDataResult {
 }
 
 export async function buildRouteData(route: RouteMatch): Promise<RouteDataResult> {
+  const config = await loadConfig();
+  
   if (route.kind === 'list' || route.kind === 'archive') {
     const posts = await loadPostSummaries();
     return {
       status: 200,
-      props: { route, posts, post: null },
+      props: { route, posts, post: null, config },
     };
   }
 
@@ -20,32 +22,32 @@ export async function buildRouteData(route: RouteMatch): Promise<RouteDataResult
     if (!route.slug) {
       return {
         status: 404,
-        props: { route: { kind: 'not-found' }, posts: [], post: null },
+        props: { route: { kind: 'not-found' }, posts: [], post: null, config },
       };
     }
     const post = await loadPost(route.slug);
     if (!post) {
       return {
         status: 404,
-        props: { route: { kind: 'not-found' }, posts: [], post: null },
+        props: { route: { kind: 'not-found' }, posts: [], post: null, config },
       };
     }
     return {
       status: 200,
-      props: { route, posts: [], post },
+      props: { route, posts: [], post, config },
     };
   }
 
   if (route.kind === 'static') {
     return {
       status: 200,
-      props: { route, posts: [], post: null },
+      props: { route, posts: [], post: null, config },
     };
   }
 
   return {
     status: 404,
-    props: { route: { kind: 'not-found' }, posts: [], post: null },
+    props: { route: { kind: 'not-found' }, posts: [], post: null, config },
   };
 }
 
@@ -56,7 +58,7 @@ export function resolveMeta(props: AppProps) {
       title: props.post.title,
       description:
         props.post.summary ??
-        "tomslab.dev｜湯編驛 (Tom's lab) - 日常編譯開發筆記",
+        "tomslab.dev｜湯編驛 (Tom's lab) - 開發筆記",
     };
   }
 
@@ -65,7 +67,7 @@ export function resolveMeta(props: AppProps) {
       return {
         title: "關於我 - tomslab.dev｜湯編驛 (Tom's lab)",
         description:
-          '關於 Tom - 日常編譯開發筆記，記錄程式碼與想法的編譯過程',
+          '關於 Tom - 開發筆記，記錄程式碼與想法的實踐過程',
       };
     }
     return {
@@ -82,8 +84,8 @@ export function resolveMeta(props: AppProps) {
   }
 
   return {
-    title: "tomslab.dev｜湯編驛 (Tom's lab) - 日常編譯開發筆記",
-    description: '日常編譯開發筆記，記錄程式碼與想法的編譯過程',
+    title: "tomslab.dev｜湯編驛 (Tom's lab) - 開發筆記",
+    description: '開發筆記，記錄程式碼與想法的實踐過程',
   };
 }
 
@@ -94,7 +96,7 @@ export async function buildFeedXml(baseUrl: string): Promise<string> {
 
 function generateRSSFeed(posts: PostSummary[], baseUrl: string): string {
   const siteTitle = "tomslab.dev｜湯編驛 (Tom's lab)";
-  const siteDescription = '日常編譯開發筆記，記錄程式碼與想法的編譯過程';
+  const siteDescription = '開發筆記，記錄程式碼與想法的實踐過程';
   const feedUrl = `${baseUrl}/feed.xml`;
   const siteUrl = baseUrl;
   const lastBuildDate = formatRSSDate(new Date());

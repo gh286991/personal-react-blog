@@ -25,14 +25,20 @@ export interface PostSummary {
   category: string | null;
   tags: string[];
   readingMinutes: number | null;
+  featured?: boolean;
 }
 
 export interface Post extends PostSummary {
   contentHtml: string;
 }
 
+export interface SiteConfig {
+  showFilters?: boolean;
+}
+
 export interface AppProps {
   route: RouteMatch;
   posts: PostSummary[];
   post?: Post | null;
+  config?: SiteConfig;
 }
