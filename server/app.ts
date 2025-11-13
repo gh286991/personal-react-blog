@@ -28,8 +28,14 @@ export async function createApp({ isProd }: CreateAppOptions) {
 
   if (!isProd) {
     const { createServer: createViteServer } = await import('vite');
+    const viteConfigPath = path.resolve(ROOT, 'vite.config.ts');
     vite = await createViteServer({
-      server: { middlewareMode: true },
+      configFile: viteConfigPath,
+      server: { 
+        middlewareMode: true,
+        // 在 middleware mode 下，Vite 不會啟動獨立的 HTTP server
+        // HMR WebSocket 會通過 Express server 工作
+      },
       appType: 'custom',
     });
     app.use(vite.middlewares);

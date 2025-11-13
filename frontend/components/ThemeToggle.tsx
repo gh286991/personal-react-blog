@@ -24,17 +24,25 @@ function getThemePreference(): boolean {
 }
 
 export function ThemeToggle() {
-  // SSR 時使用 false（淺色模式），實際值會在 useEffect 中更新
-  const [isDark, setIsDark] = useState(false);
+  // 使用與 entry-client.tsx 相同的邏輯來初始化，避免閃動
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return savedTheme === 'dark' || (savedTheme !== 'light' && prefersDark);
+    } catch {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+  });
 
   useEffect(() => {
     // 只在瀏覽器環境中執行
     if (typeof window === 'undefined') return;
 
-    // 初始化主題
-    const shouldBeDark = getThemePreference();
-    setIsDark(shouldBeDark);
-    document.documentElement.classList.toggle('dark', shouldBeDark);
+    // 確保 DOM 已經有正確的主題類別（避免閃動）
+    // 注意：這裡不需要更新 isDark，因為它已經在 useState 初始化時設置了
+    document.documentElement.classList.toggle('dark', isDark);
 
     // 監聽系統主題變化（僅在用戶沒有手動選擇時）
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -58,7 +66,7 @@ export function ThemeToggle() {
       mediaQuery.addListener(handleChange);
       return () => mediaQuery.removeListener(handleChange);
     }
-  }, []);
+  }, [isDark]);
 
   const toggleTheme = () => {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
