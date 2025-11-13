@@ -11,7 +11,7 @@ export function AboutPage() {
             關於我
           </h1>
           <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 italic font-serif">
-            日常編譯開發筆記，記錄程式碼與想法的編譯過程
+            開發筆記，記錄程式碼與想法的實踐過程
           </p>
         </header>
 
@@ -25,7 +25,7 @@ export function AboutPage() {
               </h2>
               <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed">
                 歡迎來到 <strong className="text-primary-600 dark:text-primary-400">湯編驛 (Tom's lab)</strong>！
-                這裡是我記錄日常開發筆記與程式碼編譯過程的地方。
+                這裡是我記錄開發筆記與程式碼實踐過程的地方。
               </p>
             </section>
 
@@ -43,7 +43,7 @@ export function AboutPage() {
                 <li><strong>MVP 專案</strong>：從想法到實作的完整過程</li>
                 <li><strong>軟體開發</strong>：實際遇到的問題與解決方案</li>
                 <li><strong>工具與技術</strong>：試用新工具的心得與評價</li>
-                <li><strong>開發筆記</strong>：日常編譯與開發過程的記錄</li>
+                <li><strong>開發筆記</strong>：開發過程的記錄與學習</li>
               </ul>
             </section>
 
@@ -100,8 +100,8 @@ export function AboutPage() {
                 理念
               </h2>
               <blockquote className="border-l-4 border-primary-600 dark:border-primary-400 pl-6 py-4 bg-slate-50 dark:bg-slate-700/50 rounded-r-lg italic text-lg text-slate-700 dark:text-slate-300">
-                希望透過這個部落格，記錄下每次編譯的經驗，也讓有類似想法的朋友可以參考。
-                讓我們一起把想法編譯成現實！
+                希望透過這個部落格，記錄下每次實踐的經驗，也讓有類似想法的朋友可以參考。
+                讓我們一起把想法實踐成現實！
               </blockquote>
             </section>
           </div>
