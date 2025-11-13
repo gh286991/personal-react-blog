@@ -12,9 +12,6 @@ services:
       - NODE_ENV=production
       - CONTENT_BASE=/app/dist
       - PORT=3000
-      # 記憶體優化設定
-      - BUN_JSC_forceGCSlowPaths=true
-      - BUN_JSC_useJIT=false
     restart: unless-stopped
     # 資源限制（可選，用於低記憶體環境）
     deploy:
@@ -30,4 +27,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
