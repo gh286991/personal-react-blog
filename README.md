@@ -14,11 +14,13 @@
 ### 本地開發
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 開啟 `http://localhost:3000`，伺服器會自動監聽文件變化並重新載入。
+
+> 💡 這個 repo 使用 pnpm workspace 將 `frontend/`（React 用戶端）與 `server/`（Express SSR）拆分為獨立套件，必要時可以透過 `pnpm --filter frontend …` 或 `pnpm --filter server …` 單獨執行。
 
 ### 使用 Docker
 
@@ -41,21 +43,22 @@ docker run -p 3000:3000 personal-react-blog
 ## 發佈流程
 
 ```bash
-npm run build
-npm start
+pnpm run build
+pnpm start
 ```
 
-1. `npm run build`：
+1. `pnpm run build`：
    - 清除 `dist/`
-   - 編譯伺服器 (`tsc`)
-   - 使用 `esbuild` 打包前端到 `dist/public/client.js`
-   - 複製 `public/`（排除開發用 bundle）與 `posts/` 到 `dist/`
-2. `npm start`：以 `CONTENT_BASE=dist` 啟動伺服器，確保靜態資源與 Markdown 都從編譯結果讀取。
+   - 使用 Vite 構建客戶端 (`dist/client`)
+   - 使用 Vite 構建 SSR 入口 (`dist/server/entry-server.mjs`)
+   - 編譯伺服器程式（`tsc` → `dist/server/server.js`）
+   - 複製 `posts/` 與 `public/` 到 `dist/`
+2. `pnpm start`：以 `CONTENT_BASE=dist` 啟動伺服器，確保靜態資源與 Markdown 都從編譯結果讀取。
 
 若要自訂部署路徑，只要設定：
 
 ```bash
-CONTENT_BASE=/path/to/content PORT=8080 node dist/server.js
+CONTENT_BASE=/path/to/content PORT=8080 node dist/server/server.js
 ```
 
 ## 新增 / 編輯文章
@@ -79,23 +82,20 @@ summary: "列表頁要顯示的摘要"
 
 ```
 personal-react-blog/
-├─ posts/                   # Markdown 文章
-├─ src/
-│  ├─ server/              # 服務器相關
-│  │  ├─ server.ts         # Express SSR 伺服器
-│  │  └─ entry-server.tsx  # SSR 入口
-│  ├─ page/                # 頁面組件
-│  │  ├─ Layout.tsx        # 主佈局
-│  │  ├─ PostList.tsx      # 文章列表
-│  │  └─ PostPage.tsx      # 文章詳情
-│  ├─ components/          # 共用元件
-│  │  └─ ThemeToggle.tsx   # 主題切換
-│  ├─ security/            # 安全工具
-│  ├─ App.tsx              # 共用 App 進入點
-│  ├─ entry-client.tsx     # 客戶端入口
-│  ├─ content.ts           # Markdown 載入 + 快取
-│  └─ styles.scss          # 全局樣式（Tailwind + SCSS）
-├─ scripts/                # build 輔助腳本
+├─ frontend/               # React 應用（包含 SSR / CSR 入口）
+│  ├─ App.tsx
+│  ├─ entry-client.tsx
+│  ├─ entry-server.tsx
+│  └─ components/, page/, styles.*
+├─ server/                 # Express SSR 伺服器 (pnpm 套件)
+│  ├─ server.ts
+│  ├─ app.ts
+│  └─ controllers/, services/
+├─ shared/                 # 共用型別與 URL helpers
+├─ posts/                  # Markdown 文章
+├─ scripts/                # build / runtime 輔助腳本
+├─ public/                 # 靜態資源
+├─ pnpm-workspace.yaml     # 定義 frontend/server 套件
 ├─ Dockerfile              # Docker 構建配置
 └─ docker-compose.yml      # Docker Compose 配置
 ```
