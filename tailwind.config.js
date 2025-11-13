@@ -1,8 +1,17 @@
+const path = require('node:path');
+
+const frontendDir = path.resolve(__dirname, 'frontend');
+const withFrontend = (pattern) => path.join(frontendDir, pattern);
+
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
-    "./index.html",
-    "./frontend/**/*.{js,ts,jsx,tsx}",
+    path.resolve(__dirname, 'index.html'),
+    withFrontend('App.{ts,tsx,js,jsx}'),
+    withFrontend('entry-client.tsx'),
+    withFrontend('entry-server.tsx'),
+    withFrontend('components/**/*.{ts,tsx,js,jsx}'),
+    withFrontend('page/**/*.{ts,tsx,js,jsx}'),
   ],
   darkMode: 'class',
   theme: {
@@ -87,4 +96,3 @@ export default {
   },
   plugins: [],
 }
-

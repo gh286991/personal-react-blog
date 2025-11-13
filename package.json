@@ -2,16 +2,20 @@
   "name": "personal-react-blog",
   "version": "1.0.0",
   "description": "tomslab.dev｜湯編驛 (Tom's lab) - Minimal React SSR blog powered by Markdown posts.",
-  "main": "dist/server/server.js",
+  "private": true,
+  "packageManager": "pnpm@9.12.1",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "dev": "cross-env NODE_ENV=development node scripts/run-server.mjs dev",
+    "dev": "pnpm --filter server dev",
     "clean": "node scripts/clean-dist.mjs",
-    "build:client": "bunx vite build",
-    "build:ssr": "bunx vite build --ssr server/entry-server.tsx",
-    "build:server": "bunx tsc --project tsconfig.server.json",
+    "build:client": "pnpm --filter frontend build",
+    "build:ssr": "pnpm --filter frontend build:ssr",
+    "build:server": "pnpm --filter server build",
     "copy:static": "node scripts/copy-static.mjs",
-    "build": "npm run clean && npm run build:client && npm run build:ssr && npm run build:server && npm run copy:static",
-    "start": "cross-env NODE_ENV=production CONTENT_BASE=dist LOW_MEMORY_MODE=true node scripts/run-server.mjs start"
+    "build": "pnpm run clean && pnpm run build:client && pnpm run build:ssr && pnpm run build:server && pnpm run copy:static",
+    "start": "pnpm --filter server start"
   },
   "keywords": [
     "react",
@@ -21,34 +25,12 @@
   ],
   "author": "",
   "license": "MIT",
-  "type": "commonjs",
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "express": "^5.1.0",
-    "gray-matter": "^4.0.3",
-    "lucide-react": "^0.553.0",
-    "marked": "^16.4.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "sanitize-html": "^2.17.0"
-  },
+  "workspaces": [
+    "frontend",
+    "server"
+  ],
   "devDependencies": {
-    "@types/express": "^5.0.5",
-    "@types/node": "^24.10.0",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
-    "@types/sanitize-html": "^2.16.0",
-    "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
-    "cross-env": "^7.0.3",
-    "postcss": "^8.4.49",
-    "sass": "^1.83.0",
-    "sass-embedded": "^1.93.3",
-    "tailwindcss": "^3.4.16",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3",
-    "vite": "^5.4.11"
+    "tailwindcss": "^3.4.16"
   }
 }

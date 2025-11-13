@@ -1,6 +1,6 @@
 import type { Application } from 'express';
 
-import { isLowMemoryMode } from '../shared/content.js';
+import { isLowMemoryMode } from './content.js';
 import { createApp } from './app.js';
 
 const PORT = Number(process.env.PORT ?? 3000);

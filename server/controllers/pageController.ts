@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { Request, Response } from 'express';
 import type { ViteDevServer } from 'vite';
 
-import { clearContentCaches, isLowMemoryMode } from '../../shared/content.js';
+import { clearContentCaches, isLowMemoryMode } from '../content.js';
 import type { AppProps } from '../../shared/types.js';
 import { matchRoute } from '../../frontend/router.js';
 import { buildFeedXml, buildRouteData, resolveMeta } from '../services/pageService.js';
@@ -58,7 +58,7 @@ async function renderPage(
         req.originalUrl,
         rawTemplate,
       );
-      render = (await context.vite.ssrLoadModule('/server/entry-server.tsx'))
+      render = (await context.vite.ssrLoadModule('/frontend/entry-server.tsx'))
         .render;
     } else {
       htmlTemplate = context.template;
@@ -77,6 +77,7 @@ async function renderPage(
     const escapedDescription = escapeAttr(description);
     const payload = JSON.stringify(clientProps).replace(/</g, '\\u003c');
 
+    // 優化：一次性替換所有模板變數，減少字串操作
     const response = htmlTemplate
       .replace('%APP_TITLE%', escapedTitle)
       .replace('%APP_DESCRIPTION%', escapedDescription)

@@ -1,0 +1,30 @@
+{
+  "name": "@personal-react-blog/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Express SSR backend for tomslab.dev｜湯編驛 (Tom's lab).",
+  "scripts": {
+    "dev": "node ../scripts/run-server.mjs dev",
+    "build": "tsc --project ../tsconfig.server.json",
+    "start": "node ../scripts/run-server.mjs start",
+    "typecheck": "tsc --noEmit --project ../tsconfig.server.json"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "gray-matter": "^4.0.3",
+    "marked": "^16.4.2",
+    "sanitize-html": "^2.17.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.0",
+    "@types/sanitize-html": "^2.16.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.11"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

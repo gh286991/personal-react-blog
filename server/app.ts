@@ -40,8 +40,14 @@ export async function createApp({ isProd }: CreateAppOptions) {
     if (!fs.existsSync(entryServerPath)) {
       throw new Error(`Entry server file not found: ${entryServerPath}`);
     }
+    // Import ES module from CommonJS
+    // TypeScript compiles dynamic import() to require() in CommonJS mode,
+    // so we need to use Function constructor to preserve dynamic import
     const entryServerUrl = pathToFileURL(entryServerPath).href;
-    serverRender = (await import(entryServerUrl)).render;
+    // Use Function to prevent TypeScript from converting to require()
+    const dynamicImport = new Function('specifier', 'return import(specifier)');
+    const entryModule = await dynamicImport(entryServerUrl);
+    serverRender = entryModule.render;
 
     app.use(
       '/assets',

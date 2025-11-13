@@ -1,6 +1,6 @@
 import type { AppProps, RouteMatch } from '../../shared/types.js';
 import type { PostSummary } from '../../shared/types.js';
-import { loadPost, loadPostSummaries } from '../../shared/content.js';
+import { loadPost, loadPostSummaries } from '../content.js';
 
 export interface RouteDataResult {
   props: AppProps;

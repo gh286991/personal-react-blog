@@ -4,17 +4,25 @@
     "outDir": "./dist",
     "module": "commonjs",
     "target": "es2020",
-    "sourceMap": false
+    "sourceMap": false,
+    "types": ["node"],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "typeRoots": [
+      "./server/node_modules/@types",
+      "./node_modules/@types"
+    ]
   },
   "include": [
     "server/server.ts",
     "server/app.ts",
+    "server/content.ts",
     "server/controllers/**/*.ts",
     "server/services/**/*.ts",
-    "shared/content.ts",
+    "server/security/**/*.ts",
     "shared/types.ts",
-    "shared/security/**/*.ts"
+    "shared/url.ts"
   ],
   "files": ["frontend/router.ts"],
-  "exclude": ["frontend/**/*", "server/entry-server.tsx"]
+  "exclude": ["frontend/**/*", "frontend/entry-server.tsx"]
 }
