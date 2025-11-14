@@ -262,7 +262,8 @@ export function PostPage({ post }: PostPageProps) {
 
         <div className="support-cta" role="complementary" aria-label="支持創作">
           <p className="support-cta-message">
-            喜歡這篇文章嗎？請我喝碗暖心拉麵，支持我持續分享更多開源筆記與實戰經驗。
+            喜歡這篇文章嗎？<br />
+            請我吃碗暖心拉麵，支持我持續分享更多筆記與實作經驗。
           </p>
           <BuyMeACoffeeButton />
         </div>

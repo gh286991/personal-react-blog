@@ -10,6 +10,11 @@ export type RouteCategory = 'list' | 'archive' | 'detail' | 'static' | 'not-foun
 
 export type StaticPageId = 'about';
 
+/**
+ * 文章分類，限制為以下幾種
+ */
+export type PostCategory = 'Blog' | 'Tech' | 'Note' | 'Project' | 'Tutorial';
+
 export interface RouteMatch {
   kind: RouteCategory;
   slug?: string;
@@ -22,7 +27,7 @@ export interface PostSummary {
   date: Date;
   lastUpdated: Date;
   summary: string | null;
-  category: string | null;
+  category: PostCategory | null;
   tags: string[];
   readingMinutes: number | null;
   featured?: boolean;

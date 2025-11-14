@@ -8,6 +8,49 @@ const MODE = process.argv[2] ?? 'dev';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 process.chdir(ROOT);
 
+// 檢查並清理端口
+function checkAndCleanPort(port) {
+  try {
+    const result = spawnSync('lsof', ['-ti', `:${port}`], { encoding: 'utf-8' });
+    if (result.stdout.trim()) {
+      const pids = result.stdout.trim().split('\n').filter(Boolean);
+      // 過濾掉非服務器進程（如 Chrome 連接）
+      const serverPids = pids.filter(pid => {
+        try {
+          const psResult = spawnSync('ps', ['-p', pid, '-o', 'command='], { encoding: 'utf-8' });
+          const cmd = psResult.stdout.trim();
+          // 只清理服務器相關進程
+          return cmd && (cmd.includes('bun') || cmd.includes('node') || cmd.includes('tsx') || cmd.includes('server'));
+        } catch {
+          return false;
+        }
+      });
+      
+      if (serverPids.length > 0) {
+        console.warn(`[dev] Port ${port} is already in use by: ${serverPids.join(', ')}`);
+        console.warn(`[dev] Killing existing server processes...`);
+        serverPids.forEach(pid => {
+          try {
+            spawnSync('kill', ['-9', pid], { stdio: 'ignore' });
+          } catch {
+            // ignore
+          }
+        });
+        // 等待一下讓端口釋放
+        spawnSync('sleep', ['1'], { stdio: 'ignore' });
+      }
+    }
+  } catch (error) {
+    // lsof 可能不存在或失敗，忽略
+  }
+}
+
+// 在開發模式下檢查端口
+if (MODE === 'dev') {
+  const PORT = Number(process.env.PORT) || 3000;
+  checkAndCleanPort(PORT);
+}
+
 const env = { ...process.env };
 if (MODE === 'dev') {
   env.NODE_ENV ||= 'development';
@@ -77,26 +120,58 @@ const spawnOptions = {
   stdio: 'inherit',
   env,
   cwd: ROOT,
-  detached: true, // 讓子進程獨立運行
+  detached: MODE !== 'dev', // dev 模式保持附著，方便 ctrl+c
 };
 
-const child = spawn(command, args, spawnOptions);
+let child = spawn(command, args, spawnOptions);
+let hasFallenBack = false;
 
-child.on('error', (error) => {
-  if (shouldUseBun) {
+function attachChildListeners(proc) {
+  proc.on('error', handleChildError);
+  if (MODE !== 'dev') {
+    proc.unref();
+  } else {
+    proc.on('exit', (code) => {
+      if (child === proc) {
+        process.exit(code ?? 0);
+      }
+    });
+  }
+}
+
+function handleChildError(error) {
+  if (shouldUseBun && !hasFallenBack) {
+    hasFallenBack = true;
     console.error(`[dev] Failed to start bun (${error.message}). Falling back to Node.`);
     const fallbackCommand = MODE === 'dev' ? binPath('tsx') : 'node';
-    const fallbackArgs = MODE === 'dev' ? ['server/server.ts'] : ['--max-old-space-size=48', 'dist/server/server.js'];
+    const fallbackArgs =
+      MODE === 'dev'
+        ? ['server/server.ts']
+        : ['--max-old-space-size=48', 'dist/server/server.js'];
     const fallbackChild = spawn(fallbackCommand, fallbackArgs, spawnOptions);
-    fallbackChild.unref(); // 讓主進程可以退出
+    child = fallbackChild;
+    attachChildListeners(child);
   } else {
     console.error('[dev] Failed to start server:', error);
     process.exit(1);
   }
-});
+}
 
-// 讓子進程獨立運行，主進程可以退出
-child.unref();
+attachChildListeners(child);
+
+if (MODE === 'dev') {
+  // dev 模式保持前景行程，方便觀察與終止
+  const forwardSignal = (signal) => {
+    try {
+      child.kill(signal);
+    } catch {
+      // ignore
+    }
+  };
+
+  process.on('SIGINT', () => forwardSignal('SIGINT'));
+  process.on('SIGTERM', () => forwardSignal('SIGTERM'));
+}
 
 // 對於 production 模式，立即退出啟動腳本
 if (MODE !== 'dev') {
@@ -104,11 +179,4 @@ if (MODE !== 'dev') {
   setTimeout(() => {
     process.exit(0);
   }, 100);
-} else {
-  // dev 模式：如果子進程立即失敗，等待一小段時間後檢查
-  setTimeout(() => {
-    if (child.killed || (child.exitCode !== null && child.exitCode !== 0)) {
-      process.exit(child.exitCode ?? 1);
-    }
-  }, 1000);
 }

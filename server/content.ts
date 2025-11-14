@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { GrayMatterFile } from 'gray-matter';
-import type { Post, PostSummary, SiteConfig } from '../shared/types.js';
+import type { Post, PostSummary, PostCategory, SiteConfig } from '../shared/types.js';
 import { sanitizeMarkdownHtml, sanitizePlainText, sanitizeSlug } from './security/contentSanitizers.js';
 
 // 動態載入 gray-matter（只在需要時載入）
@@ -373,11 +373,25 @@ function normalizeTags(raw: unknown): string[] {
   return [];
 }
 
-function normalizeCategory(raw: unknown): string {
+// 允許的 category 值
+const VALID_CATEGORIES: readonly PostCategory[] = ['Blog', 'Tech', 'Note', 'Project', 'Tutorial'] as const;
+
+function normalizeCategory(raw: unknown): PostCategory | null {
   if (typeof raw === 'string') {
-    return sanitizePlainText(raw, 40) || '未分類';
+    const sanitized = sanitizePlainText(raw, 40);
+    if (sanitized && VALID_CATEGORIES.includes(sanitized as PostCategory)) {
+      return sanitized as PostCategory;
+    }
+    // 如果 category 不在允許列表中，在開發模式下直接報錯
+    if (process.env.NODE_ENV !== 'production' && sanitized) {
+      const error = new Error(
+        `[content] Invalid category "${sanitized}". Allowed values: ${VALID_CATEGORIES.join(', ')}.`
+      );
+      console.error(error.message);
+      throw error;
+    }
   }
-  return '未分類';
+  return null;
 }
 
 function resolvePublishDate(raw: unknown, stat: fs.Stats): Date {
@@ -458,9 +472,13 @@ export async function loadPostSummaries(): Promise<PostSummary[]> {
       }
       try {
         const summary = await parseMarkdownSummary(fileInfo.fullPath, safeSlug);
-        // 如果文章在子目錄中，且沒有在 frontmatter 中指定 category，使用資料夾名稱
-        if (fileInfo.folder && (!summary.category || summary.category === '未分類')) {
-          summary.category = fileInfo.folder;
+        // 如果文章在子目錄中，且沒有在 frontmatter 中指定 category，嘗試使用資料夾名稱
+        if (fileInfo.folder && !summary.category) {
+          // 驗證資料夾名稱是否為有效的 category
+          const folderCategory = normalizeCategory(fileInfo.folder);
+          if (folderCategory) {
+            summary.category = folderCategory;
+          }
         }
         return summary;
       } catch (error) {

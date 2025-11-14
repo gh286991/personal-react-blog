@@ -9,6 +9,32 @@ interface PostListProps {
 
 const PAGE_SIZE = 6;
 
+function shouldAnimateOnLoad() {
+  if (typeof window === 'undefined' || typeof performance === 'undefined') {
+    return true;
+  }
+
+  try {
+    const entries =
+      typeof performance.getEntriesByType === 'function'
+        ? (performance.getEntriesByType('navigation') as PerformanceNavigationTiming[])
+        : [];
+    const navEntry = entries[0];
+    if (navEntry?.type) {
+      return navEntry.type === 'navigate';
+    }
+  } catch {
+    // ignore and fall back to legacy API
+  }
+
+  const legacyNav = performance.navigation;
+  if (legacyNav) {
+    return legacyNav.type === legacyNav.TYPE_NAVIGATE;
+  }
+
+  return true;
+}
+
 export function PostList({ posts, showFilters = true }: PostListProps) {
   const tagStats = useMemo(() => {
     if (!showFilters) return [];
@@ -39,6 +65,8 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(true);
+  const [shouldAnimate] = useState(() => shouldAnimateOnLoad());
+  const cardAnimationClass = shouldAnimate ? 'animate-fade-in-up' : '';
 
   useEffect(() => {
     setPage(1);
@@ -101,8 +129,8 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
             {featuredPosts.map((post, index) => (
               <article
                 key={post.slug}
-                className="group relative bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border-2 border-primary-200 dark:border-primary-700 hover:border-primary-400 dark:hover:border-primary-500 hover:scale-[1.02] hover:-translate-y-1 animate-fade-in-up"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className={`group relative bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border-2 border-primary-200 dark:border-primary-700 hover:border-primary-400 dark:hover:border-primary-500 hover:scale-[1.02] hover:-translate-y-1 ${cardAnimationClass}`}
+                style={shouldAnimate ? { animationDelay: `${index * 100}ms` } : undefined}
               >
                 {/* Featured Badge */}
                 <div className="absolute top-4 right-4 z-10">
@@ -311,8 +339,8 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
             return (
               <article
                 key={post.slug}
-                className={`group relative bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-200 dark:border-slate-700 hover:scale-[1.02] hover:-translate-y-1 animate-fade-in-up ${gridClass}`}
-                style={{ animationDelay: `${index * 100}ms` }}
+                className={`group relative bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-200 dark:border-slate-700 hover:scale-[1.02] hover:-translate-y-1 ${cardAnimationClass} ${gridClass}`}
+                style={shouldAnimate ? { animationDelay: `${index * 100}ms` } : undefined}
               >
                 {/* Gradient Top Border */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-600 via-accent to-primary-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -321,10 +349,10 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                 <div className={`relative p-6 ${isLarge ? 'md:p-10' : 'md:p-6'} h-full flex flex-col`}>
-                  {/* Header with Number Badge */}
+                  {/* Header with First Character Badge */}
                   <div className="flex items-start gap-4 mb-4">
                     <div className={`flex-shrink-0 ${isLarge ? 'text-5xl md:text-6xl' : 'text-3xl md:text-4xl'} font-bold gradient-text italic opacity-40 group-hover:opacity-70 transition-opacity`}>
-                      {String(index + 1).padStart(2, '0')}
+                      {post.title.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h2 className={`${isLarge ? 'text-2xl md:text-3xl lg:text-4xl' : 'text-xl md:text-2xl'} font-bold text-slate-900 dark:text-white mb-3 leading-tight tracking-tight`}>
@@ -332,7 +360,7 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
                           href={`/posts/${post.slug}`}
                           className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                         >
-                          {post.title}
+                          {post.title.slice(1)}
                         </a>
                       </h2>
                       <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
