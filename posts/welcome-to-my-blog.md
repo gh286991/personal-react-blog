@@ -8,7 +8,7 @@ tags:
   - 筆記
   - React
 updated: ""
-promoted: falsez
+promoted: false
 ---
 
 歡迎來到 **湯編驛 (Tom's lab)**！
