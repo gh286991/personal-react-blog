@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { Sparkles, Rocket, Laptop, Wrench, Rss } from 'lucide-react';
-import { ThemeToggle } from '../components/ThemeToggle.js';
-import { AuthorSidebar } from '../components/AuthorSidebar.js';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { AuthorSidebar } from '../components/AuthorSidebar';
+import { MainNav } from '../components/MainNav';
 
 interface LayoutProps {
   title?: string;
@@ -9,18 +10,20 @@ interface LayoutProps {
   children: ReactNode;
   variant?: 'hero' | 'minimal';
   showSidebar?: boolean;
+  showBackLink?: boolean;
 }
 
-export function Layout({ title, description, children, variant = 'hero', showSidebar = false }: LayoutProps) {
+export function Layout({ title, description, children, variant = 'hero', showSidebar = false, showBackLink = false }: LayoutProps) {
   const currentYear = new Date().getFullYear();
   const [isInfoDrawerOpen, setIsInfoDrawerOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   return (
     <div className="relative min-h-screen flex flex-col">
       {variant === 'hero' ? (
         <>
           {/* Sticky Navigation with Glass Effect */}
-          <nav className="sticky top-0 z-50 glass border-b border-white/20 dark:border-slate-700/50">
+          <nav className="sticky top-0 z-50 glass border-b border-white/20 dark:border-slate-700/50 relative">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center h-16 md:h-20">
                 {/* Logo/Brand */}
@@ -35,42 +38,54 @@ export function Layout({ title, description, children, variant = 'hero', showSid
                   </span>
                 </a>
 
-                {/* Navigation Links */}
-                <div className="flex items-center gap-4 md:gap-6">
-                  <a 
-                    href="/posts" 
-                    className="relative text-sm md:text-base font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 group"
-                  >
-                    <span>文章</span>
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-600 dark:bg-primary-400 group-hover:w-full transition-all duration-300"></span>
-                  </a>
-                  
-                  <a 
-                    href="/about" 
-                    className="relative text-sm md:text-base font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 group"
-                  >
-                    <span>關於</span>
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-600 dark:bg-primary-400 group-hover:w-full transition-all duration-300"></span>
-                  </a>
-                  
-                  <a 
-                    href="https://github.com/gh286991" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="relative text-sm md:text-base font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 group"
-                  >
-                    <span>GitHub</span>
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-600 dark:bg-primary-400 group-hover:w-full transition-all duration-300"></span>
-                  </a>
-                  
+                {/* Navigation Links - Desktop */}
+                <div className="hidden md:flex items-center gap-4 md:gap-6">
+                  <MainNav />
                   <ThemeToggle />
+                </div>
+
+                {/* Mobile Menu Button */}
+                <div className="md:hidden flex items-center gap-2">
+                  <ThemeToggle />
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    aria-label="選單"
+                  >
+                    {isMobileMenuOpen ? (
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
+
+            {/* Mobile Menu Backdrop */}
+            {isMobileMenuOpen && (
+              <div 
+                className="md:hidden fixed inset-0 bg-black/20 z-40"
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+            )}
+
+            {/* Mobile Menu Dropdown - Absolute positioned */}
+            {isMobileMenuOpen && (
+              <div className="md:hidden absolute top-full left-0 right-0 z-50 border-t border-white/20 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 shadow-lg">
+                <div className="px-4 py-4">
+                  <MainNav orientation="vertical" className="gap-3" />
+                </div>
+              </div>
+            )}
           </nav>
 
           {/* Hero Section with Modern Design */}
-          <header className="relative bg-gradient-to-br from-slate-50 via-stone-50 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
+          <header className={`relative bg-gradient-to-br from-slate-50 via-stone-50 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700 transition-all duration-300 ${isMobileMenuOpen ? 'blur-sm' : ''}`}>
             {/* Decorative Background Elements */}
             <div className="absolute inset-0 overflow-hidden">
               <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-400/10 rounded-full blur-3xl animate-float"></div>
@@ -134,7 +149,7 @@ export function Layout({ title, description, children, variant = 'hero', showSid
           </header>
 
           {/* Info Bar with Glass Effect */}
-          <div className="sticky top-16 md:top-20 z-40 glass border-b border-white/20 dark:border-slate-700/50 animate-fade-in">
+          <div className={`sticky top-16 md:top-20 z-40 glass border-b border-white/20 dark:border-slate-700/50 animate-fade-in transition-all duration-300 ${isMobileMenuOpen ? 'blur-sm' : ''}`}>
             <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3">
               {/* Mobile compact drawer */}
               <div className="md:hidden">
@@ -212,45 +227,98 @@ export function Layout({ title, description, children, variant = 'hero', showSid
           </div>
         </>
       ) : (
-        <header className="glass border-b border-white/20 dark:border-slate-700/50">
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 md:py-8">
-            <div className="flex justify-between items-center sm:items-start gap-2 sm:gap-4">
-              <div className="flex flex-col">
-                <a
-                  href="/"
-                  className="sm:hidden text-2xl font-semibold text-slate-900 dark:text-white font-serif tracking-tight"
-                >
-                  湯編驛
-                </a>
-                <div className="hidden sm:inline-block px-3 py-1 bg-primary-100 dark:bg-primary-900/30 rounded-lg text-xs font-semibold uppercase tracking-wider gradient-text mb-2">
-                  Post Detail
+        <header className="sticky top-0 z-50 glass border-b border-white/20 dark:border-slate-700/50 relative">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20">
+            <div className="flex justify-between items-center h-full gap-2 sm:gap-4">
+              {/* Left: Title and Description */}
+              <div className="flex items-center gap-4 sm:gap-6 flex-1 min-w-0">
+                <div className="hidden sm:flex items-baseline gap-4 flex-1 min-w-0">
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tracking-tight whitespace-nowrap">
+                    {title ?? '文章詳情'}
+                  </h1>
+                  {description && (
+                    <>
+                      <span className="text-slate-400 dark:text-slate-500">·</span>
+                      <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 font-normal">
+                        {description}
+                      </p>
+                    </>
+                  )}
                 </div>
-                <h1 className="hidden sm:block text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
-                  {title ?? '文章詳情'}
-                </h1>
-                {description && (
-                  <p className="hidden sm:block text-base md:text-lg text-slate-600 dark:text-slate-400 italic font-serif">{description}</p>
-                )}
+                {/* Mobile: Title and Description */}
+                <div className="sm:hidden flex flex-col min-w-0 flex-1">
+                  <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight truncate">
+                    {title ?? '文章詳情'}
+                  </h1>
+                  {description && (
+                    <p className="text-sm text-slate-600 dark:text-slate-400 truncate mt-0.5">
+                      {description}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3">
+
+              {/* Right: Navigation and Actions */}
+              <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                {!showBackLink && (
+                  <div className="hidden sm:flex">
+                    <MainNav />
+                  </div>
+                )}
                 <ThemeToggle />
-                <a
-                  href="/"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 font-medium rounded-lg border border-primary-600 dark:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all hover:scale-105"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  <span className="text-sm">返回列表</span>
-                </a>
+                {showBackLink && (
+                  <a
+                    href="/"
+                    className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 font-medium rounded-lg border border-primary-600 dark:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all hover:scale-105"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span className="text-sm">返回列表</span>
+                  </a>
+                )}
+                {!showBackLink && (
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="sm:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    aria-label="選單"
+                  >
+                    {isMobileMenuOpen ? (
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Mobile Menu Backdrop */}
+          {isMobileMenuOpen && !showBackLink && (
+            <div 
+              className="sm:hidden fixed inset-0 bg-black/20 z-40"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+
+          {/* Mobile Menu Dropdown - Absolute positioned */}
+          {isMobileMenuOpen && !showBackLink && (
+            <div className="sm:hidden absolute top-full left-0 right-0 z-50 border-t border-white/20 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 shadow-lg">
+              <div className="px-4 py-4">
+                <MainNav orientation="vertical" className="gap-3" />
+              </div>
+            </div>
+          )}
         </header>
       )}
 
       {/* Main Content */}
-      <main id="articles" className="flex-1 bg-stone-50 dark:bg-slate-900">
+      <main id="articles" className={`flex-1 bg-stone-50 dark:bg-slate-900 transition-all duration-300 ${isMobileMenuOpen ? 'blur-sm' : ''}`}>
         {showSidebar ? (
           <div className="py-12 md:py-16">
             <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -277,7 +345,7 @@ export function Layout({ title, description, children, variant = 'hero', showSid
       </main>
 
       {/* Footer with Gradient Accent */}
-      <footer className="relative bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 site-footer">
+      <footer className={`relative bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 site-footer transition-all duration-300 ${isMobileMenuOpen ? 'blur-sm' : ''}`}>
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-primary-600 to-transparent"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <p className="text-center text-sm text-slate-500 dark:text-slate-400 font-serif flex items-center justify-center gap-2 flex-wrap">

@@ -271,6 +271,7 @@ function buildPostSummary(slug: string, matterFile: GrayMatterFile<string>, stat
   const category = normalizeCategory(data.category);
   const lastUpdated = resolveLastUpdatedDate(stat, data.updated ?? data.lastUpdated);
   const featured = Boolean(data.featured || data.promoted || data.promote);
+  const image = resolveCoverImage(data.image ?? data.cover ?? data.heroImage);
 
   return {
     slug,
@@ -281,6 +282,7 @@ function buildPostSummary(slug: string, matterFile: GrayMatterFile<string>, stat
     readingMinutes,
     tags,
     category,
+    image,
     featured,
   };
 }
@@ -303,7 +305,7 @@ async function parseMarkdownHtmlInternal(
   const matterFile = parsed.matterFile;
   const marked = await getMarked();
   const unsafeHtml = marked.marked.parse(matterFile.content) as string;
-  const contentHtml = await sanitizeMarkdownHtml(unsafeHtml, {
+  let contentHtml = await sanitizeMarkdownHtml(unsafeHtml, {
     slug,
     onSanitized: ({ slug: sanitizedSlug }: { slug?: string }) => {
       if (process.env.NODE_ENV !== 'production') {
@@ -311,6 +313,10 @@ async function parseMarkdownHtmlInternal(
       }
     },
   });
+  
+  // 自動為所有圖片添加 lazy loading 並轉換路徑
+  contentHtml = normalizeImagePaths(contentHtml);
+  contentHtml = addLazyLoadingToImages(contentHtml);
 
   if (!HTML_CACHE_ENABLED) {
     return contentHtml;
@@ -392,6 +398,123 @@ function normalizeCategory(raw: unknown): PostCategory | null {
     }
   }
   return null;
+}
+
+/**
+ * 標準化圖片路徑：將相對路徑和本地路徑轉換為 /images/ 路徑
+ * 這樣編輯器可以使用相對路徑，服務器會自動轉換
+ * 
+ * 支持的格式：
+ * - 相對路徑：`../public/images/image.png` -> `/images/image.png`
+ * - 相對路徑：`images/image.png` -> `/images/image.png`
+ * - 絕對路徑：`/Users/.../public/images/image.png` -> `/images/image.png`
+ * - 已正確：`/images/image.png` -> 不變
+ * - 外部 URL：`https://...` -> 不變
+ */
+function normalizeImagePaths(html: string): string {
+  // 匹配圖片標籤中的 src 屬性
+  return html.replace(
+    /<img\s+([^>]*?)>/gi,
+    (match, attributes) => {
+      // 提取 src 屬性值
+      const srcMatch = attributes.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+      if (!srcMatch) {
+        return match;
+      }
+      
+      let src = srcMatch[1];
+      const originalSrc = src;
+      
+      // 如果是外部 URL，不處理
+      if (/^https?:\/\//.test(src)) {
+        return match;
+      }
+      
+      // 如果已經是 /images/ 路徑，不需要轉換
+      if (src.startsWith('/images/')) {
+        return match;
+      }
+      
+      // 提取文件名（處理各種路徑格式）
+      let fileName: string;
+      
+      // 如果是包含 public/images/ 或 images/ 的路徑，提取文件名
+      if (src.includes('public/images/')) {
+        fileName = path.basename(src.split('public/images/')[1] || src);
+      } else if (src.includes('images/')) {
+        fileName = path.basename(src.split('images/')[1] || src);
+      } else {
+        // 其他情況，直接使用文件名
+        fileName = path.basename(src);
+      }
+      
+      // 轉換為 /images/ 路徑
+      src = `/images/${fileName}`;
+      
+      // 如果路徑改變了，替換 src 屬性
+      if (src !== originalSrc) {
+        const newAttributes = attributes.replace(
+          /\bsrc\s*=\s*["'][^"']+["']/i,
+          `src="${src}"`
+        );
+        return `<img ${newAttributes}>`;
+      }
+      
+      return match;
+    }
+  );
+}
+
+/**
+ * 為所有圖片標籤自動添加 lazy loading 屬性
+ */
+function addLazyLoadingToImages(html: string): string {
+  // 匹配 <img> 標籤（包括自閉合標籤），如果沒有 loading 屬性就添加
+  return html.replace(
+    /<img\s+([^>]*?)(\s*\/)?>/gi,
+    (match, attributes, selfClosing) => {
+      // 如果已經有 loading 屬性，不修改
+      if (/\bloading\s*=/i.test(attributes)) {
+        return match;
+      }
+      // 添加 loading="lazy" 屬性，保留自閉合標記
+      const closing = selfClosing ? ' /' : '';
+      return `<img ${attributes} loading="lazy"${closing}>`;
+    }
+  );
+}
+
+function resolveCoverImage(raw: unknown): string | null {
+  if (typeof raw !== 'string') {
+    return null;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (/^https?:\/\//.test(trimmed)) {
+    return trimmed;
+  }
+  let src = trimmed;
+  if (src.startsWith('/images/')) {
+    return src;
+  }
+
+  let fileName: string | null = null;
+  if (src.includes('public/images/')) {
+    fileName = path.basename(src.split('public/images/')[1] || src);
+  } else if (src.includes('images/')) {
+    fileName = path.basename(src.split('images/')[1] || src);
+  } else if (src.startsWith('/')) {
+    fileName = path.basename(src);
+  } else {
+    fileName = path.basename(src);
+  }
+
+  if (!fileName) {
+    return null;
+  }
+  return `/images/${fileName}`;
 }
 
 function resolvePublishDate(raw: unknown, stat: fs.Stats): Date {
@@ -540,4 +663,3 @@ export async function loadConfig(): Promise<SiteConfig> {
     return defaultConfig;
   }
 }
-

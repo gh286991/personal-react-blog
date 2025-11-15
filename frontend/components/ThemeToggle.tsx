@@ -35,6 +35,11 @@ export function ThemeToggle() {
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
   });
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     // 只在瀏覽器環境中執行
@@ -83,15 +88,26 @@ export function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       className="theme-toggle"
-      aria-label={isDark ? '切換到淺色模式' : '切換到深色模式'}
-      title={isDark ? '切換到淺色模式' : '切換到深色模式'}
+      aria-label={
+        isMounted
+          ? isDark
+            ? '切換到淺色模式'
+            : '切換到深色模式'
+          : '切換主題'
+      }
+      title={
+        isMounted
+          ? isDark
+            ? '切換到淺色模式'
+            : '切換到深色模式'
+          : '切換主題'
+      }
     >
-      {isDark ? (
-        <Sun className="w-5 h-5" />
+      {isMounted ? (
+        isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />
       ) : (
         <Moon className="w-5 h-5" />
       )}
     </button>
   );
 }
-

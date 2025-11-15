@@ -8,7 +8,7 @@
  */
 export type RouteCategory = 'list' | 'archive' | 'detail' | 'static' | 'not-found';
 
-export type StaticPageId = 'about';
+export type StaticPageId = 'about' | 'works';
 
 /**
  * 文章分類，限制為以下幾種
@@ -30,6 +30,7 @@ export interface PostSummary {
   category: PostCategory | null;
   tags: string[];
   readingMinutes: number | null;
+  image: string | null;
   featured?: boolean;
 }
 

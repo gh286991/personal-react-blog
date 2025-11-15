@@ -6,7 +6,10 @@ import type { ViteDevServer } from 'vite';
 import { clearContentCaches, isLowMemoryMode } from '../content.js';
 import type { AppProps } from '../../shared/types.js';
 import { matchRoute } from '../../frontend/router.js';
-import { buildFeedXml, buildRouteData, resolveMeta } from '../services/pageService.js';
+import { buildFeedXml } from '../services/feedService.js';
+import { buildRobotsTxt, buildSitemapXml } from '../services/sitemapService.js';
+import { buildRouteData } from '../services/routeDataService.js';
+import { buildArticleJsonLd, resolveMeta } from '../services/metaService.js';
 
 const ROOT = process.cwd();
 
@@ -32,6 +35,38 @@ export function createFeedController() {
   };
 }
 
+export function createSitemapController() {
+  return async (req: Request, res: Response) => {
+    try {
+      const protocol = req.protocol;
+      const host = req.get('host') || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+      const sitemap = await buildSitemapXml(baseUrl);
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.send(sitemap);
+    } catch (error) {
+      console.error('[server] Sitemap generation failed', error);
+      res.status(500).send('Internal Server Error');
+    }
+  };
+}
+
+export function createRobotsController() {
+  return async (req: Request, res: Response) => {
+    try {
+      const protocol = req.protocol;
+      const host = req.get('host') || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+      const robots = buildRobotsTxt(baseUrl);
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.send(robots);
+    } catch (error) {
+      console.error('[server] Robots.txt generation failed', error);
+      res.status(500).send('Internal Server Error');
+    }
+  };
+}
+
 export function createSSRController(context: RenderContext) {
   return async (req: Request, res: Response) => {
     const route = matchRoute(req.path);
@@ -48,6 +83,9 @@ async function renderPage(
   context: RenderContext,
 ) {
   const shouldClearCaches = isLowMemoryMode;
+  const protocol = req.protocol;
+  const host = req.get('host') || 'localhost:3000';
+  const baseUrl = `${protocol}://${host}`;
   try {
     let htmlTemplate: string;
     let render: (props: AppProps) => Promise<{ html: string }>;
@@ -72,19 +110,33 @@ async function renderPage(
       ? props
       : { route: props.route, posts: [], post: props.post };
 
-    const { title, description } = resolveMeta(props);
+    const { title, description, keywords } = resolveMeta(props);
+    const structuredData =
+      props.route.kind === 'detail' && props.post
+        ? buildArticleJsonLd(props.post, baseUrl)
+        : null;
     const escapedTitle = escapeAttr(title);
     const escapedDescription = escapeAttr(description);
+    const escapedKeywords = escapeAttr(keywords);
     const payload = JSON.stringify(clientProps).replace(/</g, '\\u003c');
 
     // 優化：一次性替換所有模板變數，減少字串操作
     const response = htmlTemplate
       .replace('%APP_TITLE%', escapedTitle)
       .replace('%APP_DESCRIPTION%', escapedDescription)
+      .replace('%APP_KEYWORDS%', escapedKeywords)
       .replace('<!--app-html-->', html)
       .replace('<!--app-data-->', payload);
 
-    res.status(status).setHeader('Content-Type', 'text/html').send(response);
+    const finalResponse =
+      structuredData && response.includes('</head>')
+        ? response.replace(
+            '</head>',
+            `<script type="application/ld+json">${structuredData}</script></head>`,
+          )
+        : response;
+
+    res.status(status).setHeader('Content-Type', 'text/html').send(finalResponse);
   } catch (error) {
     if (context.vite && error instanceof Error) {
       context.vite.ssrFixStacktrace(error);

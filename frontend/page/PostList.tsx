@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FileText, Filter, Star } from 'lucide-react';
-import type { PostSummary } from '../../shared/types.js';
+import { FileText, Filter, Star, Folder, ChevronDown, ChevronRight, File } from 'lucide-react';
+import type { PostSummary, PostCategory } from '../../shared/types.js';
 
 interface PostListProps {
   posts: PostSummary[];
   showFilters?: boolean;
 }
 
-const PAGE_SIZE = 6;
 
 function shouldAnimateOnLoad() {
   if (typeof window === 'undefined' || typeof performance === 'undefined') {
@@ -63,14 +62,13 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
 
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [page, setPage] = useState(1);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(true);
-  const [shouldAnimate] = useState(() => shouldAnimateOnLoad());
+  const [shouldAnimate, setShouldAnimate] = useState(false);
   const cardAnimationClass = shouldAnimate ? 'animate-fade-in-up' : '';
 
   useEffect(() => {
-    setPage(1);
-  }, [selectedTag, selectedCategory]);
+    setShouldAnimate(shouldAnimateOnLoad());
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -108,8 +106,73 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
     return allPosts.filter((post) => !post.featured);
   }, [posts, showFilters, selectedTag, selectedCategory]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
-  const pagePosts = filteredPosts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // 按 category 分組文章（目錄式顯示）
+  const postsByCategory = useMemo(() => {
+    const grouped: Record<string, PostSummary[]> = {};
+    
+    for (const post of filteredPosts) {
+      const category = post.category ?? '未分類';
+      if (!grouped[category]) {
+        grouped[category] = [];
+      }
+      grouped[category].push(post);
+    }
+    
+    // 按 category 順序排序（Blog, Tech, Note, Project, Tutorial, 未分類）
+    const categoryOrder: Record<string, number> = {
+      'Blog': 1,
+      'Tech': 2,
+      'Note': 3,
+      'Project': 4,
+      'Tutorial': 5,
+      '未分類': 99,
+    };
+    
+    return Object.entries(grouped)
+      .sort(([a], [b]) => {
+        const orderA = categoryOrder[a] ?? 50;
+        const orderB = categoryOrder[b] ?? 50;
+        return orderA - orderB;
+      })
+      .map(([category, posts]) => ({
+        category,
+        posts: posts.sort((a, b) => b.date.getTime() - a.date.getTime()), // 每個分類內按日期排序
+      }));
+  }, [filteredPosts]);
+
+  // 管理摺疊狀態
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
+    // 默認展開所有分類
+    return new Set(postsByCategory.map(({ category }) => category));
+  });
+
+  // 每個分類顯示的文章數量限制
+  const POSTS_PER_CATEGORY = 10;
+  const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
+
+  const toggleShowAll = (category: string) => {
+    setExpandedPosts((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="space-y-8 md:space-y-16">
@@ -317,8 +380,8 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
       </div>
       )}
 
-      {/* Posts Grid - Bento Box Layout */}
-      {pagePosts.length === 0 ? (
+      {/* Posts Display: Card Grid for Home, Tree View for List */}
+      {filteredPosts.length === 0 ? (
         <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-12 md:p-16 text-center border-2 border-dashed border-slate-300 dark:border-slate-600">
           <div className="absolute inset-0 flex items-center justify-center opacity-5">
             <FileText className="w-48 h-48" />
@@ -327,9 +390,206 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
             還沒有符合篩選條件的文章！試著切換標籤或分類看看。
           </p>
         </div>
+      ) : showFilters ? (
+        /* Tree View for List Page */
+        <div className="space-y-0">
+          {postsByCategory.map(({ category, posts: categoryPosts }, categoryIndex) => {
+            const isExpanded = expandedCategories.has(category);
+            const isLastCategory = categoryIndex === postsByCategory.length - 1;
+            const hasMorePosts = categoryPosts.length > POSTS_PER_CATEGORY;
+            const visiblePosts = expandedPosts.has(category) ? categoryPosts : categoryPosts.slice(0, POSTS_PER_CATEGORY);
+            const needsVerticalLine = isExpanded && (visiblePosts.length > 0 || hasMorePosts) && !isLastCategory;
+            const needsCollapsedLine = !isExpanded && !isLastCategory;
+            
+            return (
+              <div
+                key={category}
+                className="relative"
+                style={shouldAnimate ? { animationDelay: `${categoryIndex * 50}ms` } : undefined}
+              >
+                {/* Tree Structure Lines for Category */}
+                <div className="absolute left-0 top-[0.5rem] md:top-[1rem] w-6 pointer-events-none" style={{ height: '100%' }}>
+                  {/* Vertical line connecting categories (from previous category) */}
+                  {categoryIndex > 0 && (
+                    <div className="absolute left-3 top-0 w-px h-4 bg-slate-300 dark:bg-slate-600"></div>
+                  )}
+                  {/* Horizontal line to category icon - aligned with folder icon center (button padding p-3 = 0.75rem, icon is w-5 h-5 = 1.25rem, center at ~1.375rem from top) */}
+                  <div className="absolute left-3 top-[0rem] md:top-[1.625rem] w-3 h-px bg-slate-300 dark:bg-slate-600"></div>
+                  {/* Vertical line down (only if expanded and not last category) */}
+                  {isExpanded && needsVerticalLine && (
+                    <div className="absolute left-3 top-[0rem] md:top-[1.625rem] w-px bg-slate-300 dark:bg-slate-600" style={{ bottom: 0 }}></div>
+                  )}
+                  {/* Vertical line down (if collapsed and not last category - extends to next category) */}
+                  {needsCollapsedLine && (
+                    <div className="absolute left-3 top-[0rem] md:top-[1.625rem] w-px bg-slate-300 dark:bg-slate-600" style={{ bottom: 0 }}></div>
+                  )}
+                </div>
+
+                <div className="pl-8">
+                  {/* Category Header - Tree Node */}
+                  <button
+                    type="button"
+                    onClick={() => toggleCategory(category)}
+                    className="w-full flex items-center justify-between p-3 md:p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-lg transition-colors group"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-primary-600 dark:text-primary-400 flex-shrink-0">
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4 transition-transform" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 transition-transform" />
+                        )}
+                        <Folder className={`w-5 h-5 ${isExpanded ? 'fill-current' : ''} transition-all`} />
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <h3 className="text-base md:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors truncate">
+                          {category}
+                        </h3>
+                        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                          {categoryPosts.length} 篇文章
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      <span className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-semibold rounded">
+                        {categoryPosts.length}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Category Posts - Tree Children */}
+                  {isExpanded && (
+                    <div className="ml-6 mt-0 relative">
+                      {visiblePosts.map((post, postIndex) => {
+                        const isLastPost = postIndex === visiblePosts.length - 1;
+                        const isLastItem = isLastPost && (!hasMorePosts || expandedPosts.has(category));
+                        const shouldContinueLine = !isLastItem || !isLastCategory;
+                        const isFirstPost = postIndex === 0;
+                        
+                        return (
+                          <div key={post.slug} className="relative">
+                            {/* Tree lines for each post */}
+                            <div className="absolute left-0 top-0 w-6 pointer-events-none" style={{ height: '100%' }}>
+                              {/* Vertical line from category (only for first post) */}
+                              {isFirstPost && (
+                                <div className="absolute left-0 top-0 w-px h-1/2 bg-slate-300 dark:bg-slate-600"></div>
+                              )}
+                              {/* Horizontal line to post - aligned with file icon center (article padding p-3 = 0.75rem, icon w-4 h-4 = 1rem with mt-0.5, center at ~1.375rem from article top) */}
+                              <div className="absolute left-0 top-[1.375rem] md:top-[1.625rem] w-3 h-px bg-slate-300 dark:bg-slate-600"></div>
+                              {/* Vertical line down (if should continue) */}
+                              {shouldContinueLine && (
+                                <div className="absolute left-0 top-[1.375rem] md:top-[1.625rem] w-px bg-slate-300 dark:bg-slate-600" style={{ bottom: 0 }}></div>
+                              )}
+                            </div>
+                            
+                            <article
+                              className="group relative hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-lg transition-colors ml-6"
+                              style={shouldAnimate ? { animationDelay: `${(categoryIndex * 100) + (postIndex * 20)}ms` } : undefined}
+                            >
+                              <a
+                                href={`/posts/${post.slug}`}
+                                className="block p-3 md:p-4"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                                    <File className="w-4 h-4 text-slate-400 dark:text-slate-500 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="text-sm md:text-base font-medium text-slate-900 dark:text-white mb-1.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                                        {post.title}
+                                      </h3>
+                                      {post.summary && (
+                                        <p className="text-xs md:text-sm text-slate-600 dark:text-slate-300 mb-2 line-clamp-2">
+                                          {post.summary}
+                                        </p>
+                                      )}
+                                      <div className="flex items-center gap-3 flex-wrap">
+                                        <time 
+                                          dateTime={post.date.toISOString()}
+                                          className="text-xs text-slate-500 dark:text-slate-400"
+                                        >
+                                          {post.date.toLocaleDateString('zh-TW', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric',
+                                          })}
+                                        </time>
+                                        {post.readingMinutes && (
+                                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            {post.readingMinutes} 分鐘
+                                          </span>
+                                        )}
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          {post.tags.slice(0, 3).map((tag) => (
+                                            <span
+                                              key={tag}
+                                              className="inline-flex items-center px-1.5 py-0.5 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-medium rounded border border-primary-200 dark:border-primary-700"
+                                            >
+                                              #{tag}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </a>
+                            </article>
+                          </div>
+                        );
+                      })}
+                      
+                      {/* Show More/Less Button */}
+                      {hasMorePosts && (
+                        <div className="relative ml-6">
+                          <div className="absolute left-0 top-0 w-6 pointer-events-none" style={{ height: '100%' }}>
+                            {/* Vertical line from last post */}
+                            {visiblePosts.length > 0 && (
+                              <div className="absolute left-0 top-0 w-px h-1/2 bg-slate-300 dark:bg-slate-600"></div>
+                            )}
+                            {/* Horizontal line to button - aligned with button text center */}
+                            <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300 dark:bg-slate-600"></div>
+                            {/* Vertical line down (if not last category) */}
+                            {!isLastCategory && (
+                              <div className="absolute left-0 top-1/2 w-px bg-slate-300 dark:bg-slate-600" style={{ bottom: 0 }}></div>
+                            )}
+                          </div>
+                          <div className="ml-6 p-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => toggleShowAll(category)}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+                            >
+                              {expandedPosts.has(category) ? (
+                                <>
+                                  <span>顯示較少</span>
+                                  <ChevronDown className="w-3 h-3" />
+                                </>
+                              ) : (
+                                <>
+                                  <span>顯示更多 ({categoryPosts.length - POSTS_PER_CATEGORY} 篇)</span>
+                                  <ChevronRight className="w-3 h-3" />
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
+        /* Card Grid for Home Page */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-auto">
-          {pagePosts.map((post, index) => {
+          {filteredPosts.map((post, index) => {
             // Bento Box sizing logic: first post is large, others are normal
             const isLarge = index === 0;
             const gridClass = isLarge 
@@ -421,36 +681,10 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
         </div>
       )}
 
-      {/* Pagination with Modern Design */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-6 pt-8">
+      {/* Summary Footer */}
+      <div className="flex items-center justify-center pt-8">
         <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-          共 <span className="font-bold text-primary-600 dark:text-primary-400">{filteredPosts.length}</span> 篇 · 
-          第 <span className="font-bold text-primary-600 dark:text-primary-400">{page}</span> / 
-          <span className="font-bold text-primary-600 dark:text-primary-400">{totalPages}</span> 頁
-        </div>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            disabled={page === 1}
-            className="group inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium rounded-xl border border-slate-300 dark:border-slate-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-600 dark:hover:border-primary-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
-          >
-            <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span>上一頁</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-            disabled={page === totalPages}
-            className="group inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium rounded-xl border border-slate-300 dark:border-slate-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-600 dark:hover:border-primary-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
-          >
-            <span>下一頁</span>
-            <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+          共 <span className="font-bold text-primary-600 dark:text-primary-400">{filteredPosts.length}</span> 篇文章
         </div>
       </div>
     </div>

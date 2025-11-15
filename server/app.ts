@@ -5,7 +5,7 @@ import express from 'express';
 import type { ViteDevServer } from 'vite';
 
 import type { AppProps } from '../shared/types.js';
-import { createFeedController, createSSRController } from './controllers/pageController.js';
+import { createFeedController, createRobotsController, createSitemapController, createSSRController } from './controllers/pageController.js';
 
 const ROOT = process.cwd();
 const POSTS_DIR = path.resolve(ROOT, 'posts');
@@ -25,6 +25,17 @@ export async function createApp({ isProd }: CreateAppOptions) {
   let vite: ViteDevServer | undefined;
   let template = '';
   let serverRender: ((props: AppProps) => Promise<{ html: string }>) | undefined;
+
+  // 提供圖片靜態資源（開發和生產模式都需要）
+  app.use(
+    '/images',
+    express.static(resolve('public/images'), {
+      maxAge: isProd ? '1y' : '0',
+      etag: !isProd,
+      lastModified: !isProd,
+      index: false,
+    }),
+  );
 
   if (!isProd) {
     const { createServer: createViteServer } = await import('vite');
@@ -74,8 +85,10 @@ export async function createApp({ isProd }: CreateAppOptions) {
   }
 
   app.get('/feed.xml', createFeedController());
+  app.get('/sitemap.xml', createSitemapController());
+  app.get('/robots.txt', createRobotsController());
   app.get(
-    /^\/(?!feed\.xml).*/,
+    /^\/(?!feed\.xml|sitemap\.xml|robots\.txt).*/,
     createSSRController({ vite, template, serverRender }),
   );
 

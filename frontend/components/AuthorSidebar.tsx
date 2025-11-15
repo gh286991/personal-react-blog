@@ -41,6 +41,12 @@ export function AuthorSidebar() {
             >
               <span>關於我</span>
             </a>
+            <a
+              href="/works"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-sm font-medium"
+            >
+              <span>項目 / Lab</span>
+            </a>
           </div>
 
           {/* Support Section */}
@@ -57,4 +63,3 @@ export function AuthorSidebar() {
     </aside>
   );
 }
-

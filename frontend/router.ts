@@ -12,6 +12,10 @@ export function matchRoute(pathname: string): RouteMatch {
     return { kind: 'static', staticPage: 'about' };
   }
 
+  if (normalized === '/works') {
+    return { kind: 'static', staticPage: 'works' };
+  }
+
   if (normalized === '/posts') {
     return { kind: 'archive' };
   }

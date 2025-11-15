@@ -78,6 +78,14 @@ summary: "列表頁要顯示的摘要"
 
 3. 儲存後重新整理頁面即可看到（開發模式有快取，會自動讀取最新檔案時間）。
 
+## RSS / Sitemap / Robots
+
+- RSS：`/feed.xml`
+- Sitemap：`/sitemap.xml`
+- Robots：`/robots.txt`
+
+Sitemap 會自動列出首頁、靜態頁面（如 `/about`, `/works`）與所有 Markdown 文章，所以只要新增 `.md` 就會出現在搜尋引擎索引；`robots.txt` 也自動指向 sitemap。
+
 ## 目錄結構
 
 ```
@@ -136,6 +144,5 @@ personal-react-blog/
 ## 待延伸想法
 
 - 接上 `remark-prism` 等語法上色
-- 建立 RSS / Sitemap
 - 加入圖片 lazy loading 或 CDN
 - 添加搜索功能

@@ -3,6 +3,7 @@ import { Layout } from './page/Layout.js';
 import { PostList } from './page/PostList.js';
 import { PostPage } from './page/PostPage.js';
 import { AboutPage } from './page/AboutPage.js';
+import { WorksPage } from './page/WorksPage.js';
 
 export function App({ route, posts, post, config }: AppProps) {
   const page = route.kind;
@@ -10,6 +11,7 @@ export function App({ route, posts, post, config }: AppProps) {
   const isStatic = page === 'static';
   const staticPage = route.staticPage;
   const isAbout = isStatic && staticPage === 'about';
+  const isWorks = isStatic && staticPage === 'works';
   const isArchive = page === 'archive';
   const isDetail = page === 'detail';
   
@@ -26,6 +28,9 @@ export function App({ route, posts, post, config }: AppProps) {
     if (isAbout) {
       pageTitle = '關於我';
       description = '開發筆記，記錄程式碼與想法的實踐過程';
+    } else if (isWorks) {
+      pageTitle = '項目 / Lab';
+      description = 'MVP 產品與實驗室專案展示';
     } else {
       pageTitle = '靜態頁面';
       description = '網站靜態內容';
@@ -41,10 +46,12 @@ export function App({ route, posts, post, config }: AppProps) {
       description={description} 
       variant={isList ? 'hero' : 'minimal'}
       showSidebar={isList}
+      showBackLink={isDetail}
     >
       {isList && <PostList posts={posts} showFilters={config?.showFilters ?? false} />}
       {isArchive && <PostList posts={posts} showFilters={true} />}
       {isAbout && <AboutPage />}
+      {isWorks && <WorksPage />}
       {isDetail && post && <PostPage post={post} />}
       {isDetail && !post && <p>找不到文章，請回到首頁。</p>}
       {!isList && !isArchive && !isStatic && !isDetail && <p>找不到文章，請回到首頁。</p>}
