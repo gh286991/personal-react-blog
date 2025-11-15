@@ -6,6 +6,17 @@ const DIST = path.join(ROOT, 'dist');
 await fs.mkdir(DIST, { recursive: true });
 await copyDir(path.join(ROOT, 'posts'), path.join(DIST, 'posts'));
 
+// 複製 public 目錄（包含圖片）到 dist/client 和 dist/public
+const publicDir = path.join(ROOT, 'public');
+const distClientDir = path.join(DIST, 'client');
+const distPublicDir = path.join(DIST, 'public');
+if (await fs.access(publicDir).then(() => true).catch(() => false)) {
+  // 複製到 dist/public（用於 Node.js 服務器）
+  await copyDir(publicDir, distPublicDir);
+  // 複製到 dist/client（用於 Go 服務器，因為它從 clientDir 提供靜態文件）
+  await copyDir(publicDir, distClientDir);
+}
+
 async function copyDir(source, target, exclude = new Set()) {
   try {
     const entries = await fs.readdir(source, { withFileTypes: true });

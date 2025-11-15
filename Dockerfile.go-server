@@ -1,0 +1,92 @@
+# syntax=docker/dockerfile:1
+
+##
+## Frontend builder: produces Vite build artifacts
+##
+FROM node:20-alpine AS client-builder
+WORKDIR /app
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+# Dependency manifests first for better layer caching
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc* ./
+COPY frontend/package.json frontend/package.json
+COPY server/package.json server/package.json
+
+RUN pnpm install --frozen-lockfile --shamefully-hoist
+
+# Copy config + source needed for the build
+COPY postcss.config.js tailwind.config.js vite.config.ts ./
+COPY tsconfig.json tsconfig.server.json ./
+COPY index.html ./
+COPY scripts/ ./scripts/
+COPY frontend/ ./frontend/
+COPY server/ ./server/
+COPY shared/ ./shared/
+COPY posts/ ./posts/
+COPY public/ ./public/
+
+ENV NODE_ENV=production
+RUN pnpm run build && \
+    test -f /app/dist/server/entry-server.mjs || (echo "entry-server.mjs not found" && exit 1)
+
+# Minimal node_modules required by dist/server/entry-server.mjs at runtime
+RUN mkdir -p /app/runtime && \
+    printf '{"dependencies":{"react":"^19.2.0","react-dom":"^19.2.0","lucide-react":"^0.553.0"}}\n' > /app/runtime/package.json && \
+    cd /app/runtime && \
+    npm install --production --legacy-peer-deps && \
+    rm package.json
+
+##
+## Go builder: compiles the SSR HTTP server
+##
+FROM golang:1.22-bullseye AS go-builder
+WORKDIR /src
+
+ENV GOTOOLCHAIN=go1.25.4
+
+COPY server-go/go.mod server-go/go.sum ./server-go/
+RUN cd server-go && go mod download
+
+COPY server-go ./server-go
+
+RUN cd server-go && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /usr/local/bin/go-server ./cmd/server
+
+##
+## Runtime image (Go + Node for SSR worker)
+##
+FROM node:20-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    CONTENT_BASE=/app \
+    LOW_MEMORY_MODE=true \
+    PORT=4173
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Wrap node to cap heap usage (64MB default, overridable via SSR_NODE_HEAP)
+RUN cat <<'EOF' >/usr/local/bin/ssr-node && chmod +x /usr/local/bin/ssr-node
+#!/bin/sh
+heap_limit="${SSR_NODE_HEAP:-64}"
+exec node --max-old-space-size="$heap_limit" "$@"
+EOF
+
+COPY --from=go-builder /usr/local/bin/go-server /usr/local/bin/go-server
+COPY --from=go-builder /src/server-go/ssr ./server-go/ssr
+
+COPY --from=client-builder /app/dist ./dist
+COPY --from=client-builder /app/posts ./posts
+COPY --from=client-builder /app/public ./public
+COPY --from=client-builder /app/runtime/node_modules ./node_modules
+
+EXPOSE 4173
+
+ENTRYPOINT ["/usr/local/bin/go-server"]
+CMD ["-root", "/app", "-dist", "dist", "-content-base", ".", "-node", "/usr/local/bin/ssr-node"]

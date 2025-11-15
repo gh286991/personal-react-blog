@@ -61,6 +61,32 @@ pnpm start
 CONTENT_BASE=/path/to/content PORT=8080 node dist/server/server.js
 ```
 
+## Go 版 SSR 伺服器（實驗性）
+
+想比較 Go 伺服器與原本的 Express 版本，可以透過 `server-go/` 目錄啟動一個新的 SSR 後端。使用前請先確保已完成 `pnpm run build`，以便產生 `dist/` 內容。
+
+```bash
+# 建議先確保 Go 1.21+ 已安裝
+pnpm run build
+go run ./server-go/cmd/server --addr :4173
+```
+
+主要選項：
+
+- `--addr`：監聽位址（預設 `:4173`）
+- `--root`：專案根目錄（預設當前工作目錄）
+- `--dist`：編譯輸出路徑（預設 `dist`）
+- `--content-base`：文章與靜態內容來源，預設與 `dist` 相同，可指向原始 `posts/`
+- `--node`：指定執行 SSR render worker 的 Node 可執行檔
+
+Go 伺服器會：
+
+1. 從 `dist/client/index.html` 讀取模板，並服務 `/assets/*` 靜態資源。
+2. 讀取 Markdown 文章並產生 RSS `/feed.xml`。
+3. 透過 background Node worker 執行 React SSR（載入 `dist/server/entry-server.mjs`），輸出的 HTML/初始資料會以與原本伺服器相同的格式注入模板，方便直接比較效能。
+
+> ⚠️ 仍需 Node runtime 以執行 React SSR。Go 只是負責 HTTP、內容載入與回應組裝。
+
 ## 新增 / 編輯文章
 
 1. 在 `posts/` 底下建立 `my-post.md`
