@@ -5,6 +5,8 @@ const ROOT = process.cwd();
 const DIST = path.join(ROOT, 'dist');
 await fs.mkdir(DIST, { recursive: true });
 await copyDir(path.join(ROOT, 'posts'), path.join(DIST, 'posts'));
+// 複製 public 目錄到 dist/client（包含 favicon）
+await copyDir(path.join(ROOT, 'public'), path.join(DIST, 'client'));
 
 async function copyDir(source, target, exclude = new Set()) {
   try {

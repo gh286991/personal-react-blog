@@ -37,6 +37,17 @@ export async function createApp({ isProd }: CreateAppOptions) {
     }),
   );
 
+  // 提供 favicon 靜態資源（開發和生產模式都需要）
+  app.use(
+    '/favicon',
+    express.static(resolve('public/favicon'), {
+      maxAge: isProd ? '1y' : '0',
+      etag: !isProd,
+      lastModified: !isProd,
+      index: false,
+    }),
+  );
+
   if (!isProd) {
     const { createServer: createViteServer } = await import('vite');
     const viteConfigPath = path.resolve(ROOT, 'vite.config.ts');
@@ -80,6 +91,16 @@ export async function createApp({ isProd }: CreateAppOptions) {
         index: false,
         etag: false,
         lastModified: false,
+      }),
+    );
+    // 確保 favicon 在生產模式下可訪問
+    app.use(
+      '/favicon',
+      express.static(resolve('dist/client/favicon'), {
+        maxAge: '1y',
+        etag: false,
+        lastModified: false,
+        index: false,
       }),
     );
   }

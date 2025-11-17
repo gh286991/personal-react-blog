@@ -29,13 +29,22 @@ export function Layout({ title, description, children, variant = 'hero', showSid
                 {/* Logo/Brand */}
                 <a 
                   href="/" 
-                  className="group relative text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight"
+                  className="group relative flex items-end gap-2 hover:opacity-80 transition-opacity"
                 >
-                  <span className="relative inline-block">
-                    <span className="hidden sm:inline">tomslab.dev｜<span className="font-serif">湯編驛</span></span>
-                    <span className="sm:hidden font-serif">湯編驛</span>
-                    <span className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-primary-600 via-accent to-primary-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
-                  </span>
+                  <img 
+                    src="/favicon/favicon-32x32.png" 
+                    alt="湯編驛" 
+                    className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0"
+                  />
+                  <div className="flex items-end gap-2">
+                    <span className="text-2xl md:text-3xl text-slate-900 dark:text-white font-bold font-serif tracking-tight">
+                      湯編驛
+                    </span>
+                    <span className="text-xs md:text-sm text-slate-600 dark:text-slate-400 font-medium tracking-tight pb-0.5">
+                      tomslab.dev
+                    </span>
+                  </div>
+                  <span className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-primary-600 via-accent to-primary-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
                 </a>
 
                 {/* Navigation Links - Desktop */}
@@ -230,45 +239,38 @@ export function Layout({ title, description, children, variant = 'hero', showSid
         <header className="sticky top-0 z-50 glass border-b border-white/20 dark:border-slate-700/50 relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20">
             <div className="flex justify-between items-center h-full gap-2 sm:gap-4">
-              {/* Left: Title and Description */}
-              <div className="flex items-center gap-4 sm:gap-6 flex-1 min-w-0">
-                <div className="hidden sm:flex items-baseline gap-4 flex-1 min-w-0">
-                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tracking-tight whitespace-nowrap">
-                    {title ?? '文章詳情'}
-                  </h1>
-                  {description && (
-                    <>
-                      <span className="text-slate-400 dark:text-slate-500">·</span>
-                      <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 font-normal">
-                        {description}
-                      </p>
-                    </>
-                  )}
+              {/* Left: Logo/Brand (same as hero variant) */}
+              <a 
+                href="/" 
+                className="group relative flex items-end gap-2 hover:opacity-80 transition-opacity flex-shrink-0"
+              >
+                <img 
+                  src="/favicon/favicon-32x32.png" 
+                  alt="湯編驛" 
+                  className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0"
+                />
+                <div className="flex items-end gap-2">
+                  <span className="text-2xl md:text-3xl text-slate-900 dark:text-white font-bold font-serif tracking-tight">
+                    湯編驛
+                  </span>
+                  <span className="text-xs md:text-sm text-slate-600 dark:text-slate-400 font-medium tracking-tight pb-0.5">
+                    tomslab.dev
+                  </span>
                 </div>
-                {/* Mobile: Title and Description */}
-                <div className="sm:hidden flex flex-col min-w-0 flex-1">
-                  <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight truncate">
-                    {title ?? '文章詳情'}
-                  </h1>
-                  {description && (
-                    <p className="text-sm text-slate-600 dark:text-slate-400 truncate mt-0.5">
-                      {description}
-                    </p>
-                  )}
-                </div>
-              </div>
+                <span className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-primary-600 via-accent to-primary-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
+              </a>
 
               {/* Right: Navigation and Actions */}
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                 {!showBackLink && (
-                  <div className="hidden sm:flex">
+                  <div className="hidden md:flex">
                     <MainNav />
                   </div>
                 )}
                 <ThemeToggle />
                 {showBackLink && (
                   <a
-                    href="/"
+                    href="/posts"
                     className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 font-medium rounded-lg border border-primary-600 dark:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all hover:scale-105"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -280,7 +282,7 @@ export function Layout({ title, description, children, variant = 'hero', showSid
                 {!showBackLink && (
                   <button
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="sm:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     aria-label="選單"
                   >
                     {isMobileMenuOpen ? (
