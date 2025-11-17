@@ -610,8 +610,8 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
 
                 <div className={`relative p-6 ${isLarge ? 'md:p-10' : 'md:p-6'} h-full flex flex-col`}>
                   {/* Header with First Character Badge */}
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className={`flex-shrink-0 ${isLarge ? 'text-5xl md:text-6xl' : 'text-3xl md:text-4xl'} font-bold gradient-text italic opacity-40 group-hover:opacity-70 transition-opacity`}>
+                  <div className="flex items-start gap-1.5 mb-4">
+                    <div className={`flex-shrink-0 ${isLarge ? 'text-7xl md:text-7xl' : 'text-3xl md:text-4xl'} font-bold gradient-text italic opacity-40 group-hover:opacity-70 transition-opacity pr-1.5`}>
                       {post.title.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
