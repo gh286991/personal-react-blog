@@ -121,15 +121,46 @@ async function renderPage(
     const payload = JSON.stringify(clientProps).replace(/</g, '\\u003c');
 
     // 生成 Google Analytics 腳本（如果環境變數存在）
+    // 使用 Consent Mode v2，預設拒絕所有 consent，等待用戶同意
     const gaId = process.env.GA_ID;
     const gaScript = gaId
-      ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${escapeAttr(gaId)}"></script>
-    <script>
+      ? `<script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      
+      // 設定預設的 consent mode（在載入 gtag.js 之前）
+      gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'wait_for_update': 500
+      });
+      
+      // 檢查是否有已儲存的同意設定
+      (function() {
+        try {
+          const savedConsent = localStorage.getItem('ga_consent');
+          if (savedConsent) {
+            const consent = JSON.parse(savedConsent);
+            if (consent.preferences) {
+              gtag('consent', 'update', {
+                'analytics_storage': consent.preferences.analytics_storage || 'denied',
+                'ad_storage': consent.preferences.ad_storage || 'denied',
+                'ad_user_data': consent.preferences.ad_user_data || 'denied',
+                'ad_personalization': consent.preferences.ad_personalization || 'denied'
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to load consent preferences:', e);
+        }
+      })();
+      
       gtag('js', new Date());
       gtag('config', ${JSON.stringify(gaId)});
-    </script>`
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=${escapeAttr(gaId)}"></script>`
       : '';
 
     // 優化：一次性替換所有模板變數，減少字串操作

@@ -3,6 +3,7 @@ import { Sparkles, Rocket, Laptop, Wrench, Rss } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { AuthorSidebar } from '../components/AuthorSidebar';
 import { MainNav } from '../components/MainNav';
+import { ConsentBanner } from '../components/ConsentBanner';
 
 interface LayoutProps {
   title?: string;
@@ -355,6 +356,9 @@ export function Layout({ title, description, children, variant = 'hero', showSid
           </p>
         </div>
       </footer>
+
+      {/* Consent Banner */}
+      <ConsentBanner />
     </div>
   );
 }
