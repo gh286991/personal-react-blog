@@ -120,11 +120,24 @@ async function renderPage(
     const escapedKeywords = escapeAttr(keywords);
     const payload = JSON.stringify(clientProps).replace(/</g, '\\u003c');
 
+    // 生成 Google Analytics 腳本（如果環境變數存在）
+    const gaId = process.env.GA_ID;
+    const gaScript = gaId
+      ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${escapeAttr(gaId)}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', ${JSON.stringify(gaId)});
+    </script>`
+      : '';
+
     // 優化：一次性替換所有模板變數，減少字串操作
     const response = htmlTemplate
       .replace('%APP_TITLE%', escapedTitle)
       .replace('%APP_DESCRIPTION%', escapedDescription)
       .replace('%APP_KEYWORDS%', escapedKeywords)
+      .replace('%GA_SCRIPT%', gaScript)
       .replace('<!--app-html-->', html)
       .replace('<!--app-data-->', payload);
 
