@@ -33,7 +33,7 @@ export function Layout({ title, description, children, variant = 'hero', showSid
                   className="group relative flex items-end gap-2 hover:opacity-80 transition-opacity"
                 >
                   <img 
-                    src="/favicon/favicon-32x32.png" 
+                    src="/favicon-32x32.png" 
                     alt="湯編驛" 
                     className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0"
                   />
@@ -245,8 +245,8 @@ export function Layout({ title, description, children, variant = 'hero', showSid
                 href="/" 
                 className="group relative flex items-end gap-2 hover:opacity-80 transition-opacity flex-shrink-0"
               >
-                <img 
-                  src="/favicon/favicon-32x32.png" 
+                  <img 
+                    src="/favicon-32x32.png" 
                   alt="湯編驛" 
                   className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0"
                 />

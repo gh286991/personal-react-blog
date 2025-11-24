@@ -6,9 +6,14 @@ import type { ViteDevServer } from 'vite';
 
 import type { AppProps } from '../shared/types.js';
 import { createFeedController, createRobotsController, createSitemapController, createSSRController } from './controllers/pageController.js';
+import { createPublicAssetResolver } from './utils/publicAssetResolver.js';
 
 const ROOT = process.cwd();
 const POSTS_DIR = path.resolve(ROOT, 'posts');
+const PUBLIC_DIR = path.resolve(ROOT, 'public');
+const DIST_CLIENT_DIR = path.resolve(ROOT, 'dist/client');
+const STATIC_ASSET_PATTERN =
+  /^\/([^/]+\.(?:png|jpe?g|gif|svg|ico|webmanifest|xml|json|webp|avif|txt|woff2?|woff|ttf|eot|mp4|webm))$/i;
 
 export interface CreateAppOptions {
   isProd: boolean;
@@ -25,6 +30,33 @@ export async function createApp({ isProd }: CreateAppOptions) {
   let vite: ViteDevServer | undefined;
   let template = '';
   let serverRender: ((props: AppProps) => Promise<{ html: string }>) | undefined;
+
+  const assetResolverRoots = isProd
+    ? [DIST_CLIENT_DIR, PUBLIC_DIR]
+    : [PUBLIC_DIR];
+  const publicAssetResolver = createPublicAssetResolver(assetResolverRoots);
+
+  // 提供 public 資源的平面別名（允許 /filename 直接存取）
+  app.get(STATIC_ASSET_PATTERN, (req, res, next) => {
+    const match = req.path.match(STATIC_ASSET_PATTERN);
+    const fileName = match?.[1];
+    if (!fileName) {
+      return next();
+    }
+    const filePath = publicAssetResolver.resolve(fileName);
+    if (!filePath) {
+      return next();
+    }
+    const cacheControl = isProd
+      ? 'public, max-age=31536000, immutable'
+      : 'no-cache';
+    res.setHeader('Cache-Control', cacheControl);
+    res.sendFile(filePath, (err) => {
+      if (err) {
+        next(err);
+      }
+    });
+  });
 
   // 提供圖片靜態資源（開發和生產模式都需要）
   app.use(

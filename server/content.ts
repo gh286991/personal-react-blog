@@ -401,14 +401,14 @@ function normalizeCategory(raw: unknown): PostCategory | null {
 }
 
 /**
- * 標準化圖片路徑：將相對路徑和本地路徑轉換為 /images/ 路徑
+ * 標準化圖片路徑：將相對路徑和本地路徑轉換為根層級的 /filename 路徑
  * 這樣編輯器可以使用相對路徑，服務器會自動轉換
  * 
  * 支持的格式：
- * - 相對路徑：`../public/images/image.png` -> `/images/image.png`
- * - 相對路徑：`images/image.png` -> `/images/image.png`
- * - 絕對路徑：`/Users/.../public/images/image.png` -> `/images/image.png`
- * - 已正確：`/images/image.png` -> 不變
+ * - 相對路徑：`../public/images/image.png` -> `/image.png`
+ * - 相對路徑：`images/image.png` -> `/image.png`
+ * - 絕對路徑：`/Users/.../public/images/image.png` -> `/image.png`
+ * - 已正確：`/image.png` -> 不變
  * - 外部 URL：`https://...` -> 不變
  */
 function normalizeImagePaths(html: string): string {
@@ -430,8 +430,8 @@ function normalizeImagePaths(html: string): string {
         return match;
       }
       
-      // 如果已經是 /images/ 路徑，不需要轉換
-      if (src.startsWith('/images/')) {
+      // 如果已經是根層級路徑（僅含單一檔名），不需要轉換
+      if (/^\/[^/]+$/.test(src)) {
         return match;
       }
       
@@ -448,8 +448,8 @@ function normalizeImagePaths(html: string): string {
         fileName = path.basename(src);
       }
       
-      // 轉換為 /images/ 路徑
-      src = `/images/${fileName}`;
+      // 轉換為根層級路徑
+      src = `/${fileName}`;
       
       // 如果路徑改變了，替換 src 屬性
       if (src !== originalSrc) {
@@ -496,7 +496,7 @@ function resolveCoverImage(raw: unknown): string | null {
     return trimmed;
   }
   let src = trimmed;
-  if (src.startsWith('/images/')) {
+  if (/^\/[^/]+$/.test(src)) {
     return src;
   }
 
@@ -514,7 +514,7 @@ function resolveCoverImage(raw: unknown): string | null {
   if (!fileName) {
     return null;
   }
-  return `/images/${fileName}`;
+  return `/${fileName}`;
 }
 
 function resolvePublishDate(raw: unknown, stat: fs.Stats): Date {

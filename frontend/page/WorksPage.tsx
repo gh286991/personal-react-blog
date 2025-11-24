@@ -10,9 +10,7 @@ const projectItems = [
       'Vlogo：watch vlog and go! 自動整理 YouTube 旅遊景點與時間點，提供快速筆記與地圖連結。幫你快速整理 YouTube 旅遊 Vlog 的亮點片段，把影片裡的景點、時間點與摘要一次排好，配上 Google 地圖連結，讓你隨時開箱旅遊靈感、直接安排自己的行程。',
     websiteUrl: 'https://vlogo.tomslab.dev/',
     extensionUrl: 'https://chromewebstore.google.com/detail/vlogo/gafjhpljbjkfldgjpdaiokeijelojdgi',
-    images: [
-      '/images/vlogoprmot1.png',
-    ],
+    images: ['/vlogoprmot1.png'],
   },
 ];
 
@@ -34,7 +32,7 @@ const labItems: Array<{
       '使用 Godot 引擎開發的 2D 飛機射擊遊戲。玩家控制一架飛機，躲避敵機並射擊得分。包含流暢的飛機控制系統、動態敵機生成、即時分數顯示、精美背景效果和完整的碰撞檢測系統。支援鍵盤和觸控操作，可在瀏覽器中直接遊玩。',
     demoUrl: 'https://gh286991.github.io/Godot-Shmup/',
     githubUrl: 'https://github.com/gh286991/Godot-Shmup',
-    image: '/images/CPT2511151043-359x700.gif',
+    image: '/CPT2511151043-359x700.gif',
   },
 ];
 
@@ -296,4 +294,3 @@ export function WorksPage() {
     </div>
   );
 }
-
