@@ -13,7 +13,7 @@ export type StaticPageId = 'about' | 'works';
 /**
  * 文章分類，限制為以下幾種
  */
-export type PostCategory = 'Blog' | 'Tech' | 'Note' | 'Project' | 'Tutorial';
+export type PostCategory = 'Blog' | 'Tech' | 'Note' | 'Project' | 'Tutorial' | 'Lab';
 
 export interface RouteMatch {
   kind: RouteCategory;

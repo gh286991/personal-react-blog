@@ -309,7 +309,8 @@ async function parseMarkdownHtmlInternal(
     slug,
     onSanitized: ({ slug: sanitizedSlug }: { slug?: string }) => {
       if (process.env.NODE_ENV !== 'production') {
-        logContentError(`[content] Sanitized unsafe HTML in post "${sanitizedSlug ?? 'unknown'}"`);
+        const postSlug = sanitizedSlug ?? slug ?? 'unknown';
+        console.warn(`[content] Sanitized unsafe HTML in post "${postSlug}"`);
       }
     },
   });
@@ -380,7 +381,7 @@ function normalizeTags(raw: unknown): string[] {
 }
 
 // 允許的 category 值
-const VALID_CATEGORIES: readonly PostCategory[] = ['Blog', 'Tech', 'Note', 'Project', 'Tutorial'] as const;
+const VALID_CATEGORIES: readonly PostCategory[] = ['Blog', 'Tech', 'Note', 'Project', 'Tutorial', 'Lab'] as const;
 
 function normalizeCategory(raw: unknown): PostCategory | null {
   if (typeof raw === 'string') {

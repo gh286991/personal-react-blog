@@ -103,11 +103,21 @@ export async function sanitizeMarkdownHtml(html: string, options: HtmlSanitizeOp
   return sanitize(cleaned, htmlSanitizeOptionsWithTransform);
 }
 
+const VOID_TAG_PATTERN = /<(img|br|hr)([^>]*)\/?>/gi;
+
+function normalizeForComparison(value: string): string {
+  const decoded = decodeBasicEntities(value);
+  return decoded.replace(VOID_TAG_PATTERN, (_match, tag, attrs) => {
+    const normalizedAttrs = attrs ? attrs.replace(/\s+\/?$/, '') : '';
+    return `<${tag}${normalizedAttrs}>`;
+  });
+}
+
 function areHtmlStringsEquivalent(a: string, b: string): boolean {
   if (a === b) {
     return true;
   }
-  return decodeBasicEntities(a) === decodeBasicEntities(b);
+  return normalizeForComparison(a) === normalizeForComparison(b);
 }
 
 function decodeBasicEntities(value: string): string {

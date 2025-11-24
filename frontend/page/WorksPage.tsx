@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpRight, FlaskConical, Sparkles, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowUpRight, FlaskConical, Sparkles, ExternalLink, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
 const projectItems = [
   {
@@ -22,6 +22,7 @@ const labItems: Array<{
   description: string;
   demoUrl?: string;
   githubUrl?: string;
+  postSlug?: string;
   image?: string;
 }> = [
   {
@@ -32,6 +33,7 @@ const labItems: Array<{
       '使用 Godot 引擎開發的 2D 飛機射擊遊戲。玩家控制一架飛機，躲避敵機並射擊得分。包含流暢的飛機控制系統、動態敵機生成、即時分數顯示、精美背景效果和完整的碰撞檢測系統。支援鍵盤和觸控操作，可在瀏覽器中直接遊玩。',
     demoUrl: 'https://gh286991.github.io/Godot-Shmup/',
     githubUrl: 'https://github.com/gh286991/Godot-Shmup',
+    postSlug: 'godot-2d-shoot-game',
     image: '/CPT2511151043-359x700.gif',
   },
 ];
@@ -249,6 +251,15 @@ export function WorksPage() {
                       
                       {/* 連結按鈕組 */}
                       <div className="flex flex-wrap gap-3">
+                        {lab.postSlug && (
+                          <a
+                            href={`/posts/${lab.postSlug}`}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold shadow-lg hover:bg-primary-600 dark:bg-white/10 dark:text-white dark:hover:bg-primary-600 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+                          >
+                            <span>查看文章</span>
+                            <FileText className="w-4 h-4" />
+                          </a>
+                        )}
                         {lab.demoUrl && (
                           <a
                             href={lab.demoUrl}

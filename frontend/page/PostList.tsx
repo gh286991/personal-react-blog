@@ -125,6 +125,7 @@ export function PostList({ posts, showFilters = true }: PostListProps) {
       'Note': 3,
       'Project': 4,
       'Tutorial': 5,
+      'Lab': 6,
       '未分類': 99,
     };
     

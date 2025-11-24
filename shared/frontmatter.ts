@@ -3,14 +3,14 @@
  * 用於在開發時驗證 Markdown frontmatter 的類型
  */
 
-import type { PostCategory } from './types.js';
-import type { PostFrontmatter } from './frontmatter.js';
+import type { PostCategory } from './types';
+import type { PostFrontmatter } from './frontmatter';
 
 /**
  * 驗證 frontmatter 的 category 是否為有效值
  */
 export function validateCategory(category: string): category is PostCategory {
-  const validCategories: PostCategory[] = ['Blog', 'Tech', 'Note', 'Project', 'Tutorial'];
+  const validCategories: PostCategory[] = ['Blog', 'Tech', 'Note', 'Project', 'Tutorial', 'Lab'];
   return validCategories.includes(category as PostCategory);
 }
 
@@ -54,6 +54,6 @@ export function validateFrontmatter(data: unknown): data is PostFrontmatter {
  * 獲取所有有效的 category 值
  */
 export function getValidCategories(): readonly PostCategory[] {
-  return ['Blog', 'Tech', 'Note', 'Project', 'Tutorial'] as const;
+  return ['Blog', 'Tech', 'Note', 'Project', 'Tutorial', 'Lab'] as const;
 }
 
