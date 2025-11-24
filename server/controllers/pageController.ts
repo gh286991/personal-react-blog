@@ -120,6 +120,20 @@ async function renderPage(
     const escapedKeywords = escapeAttr(keywords);
     const payload = JSON.stringify(clientProps).replace(/</g, '\\u003c');
 
+    // 生成 Google Tag Manager 腳本（如果環境變數存在）
+    const gtmId = process.env.GTM_ID;
+    const gtmScript = gtmId
+      ? `<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer',${JSON.stringify(gtmId)});</script>`
+      : '';
+    const gtmNoscript = gtmId
+      ? `<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${escapeAttr(gtmId)}"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`
+      : '';
+
     // 生成 Google Analytics 腳本（如果環境變數存在）
     // 使用 Consent Mode v2，預設拒絕所有 consent，等待用戶同意
     const gaId = process.env.GA_ID;
@@ -168,6 +182,8 @@ async function renderPage(
       .replace('%APP_TITLE%', escapedTitle)
       .replace('%APP_DESCRIPTION%', escapedDescription)
       .replace('%APP_KEYWORDS%', escapedKeywords)
+      .replace('%GTM_SCRIPT%', gtmScript)
+      .replace('%GTM_NOSCRIPT%', gtmNoscript)
       .replace('%GA_SCRIPT%', gaScript)
       .replace('<!--app-html-->', html)
       .replace('<!--app-data-->', payload);
