@@ -4,7 +4,15 @@
  */
 
 import type { PostCategory } from './types';
-import type { PostFrontmatter } from './frontmatter';
+export interface PostFrontmatter {
+  title: string;
+  date: string;
+  summary: string;
+  category: PostCategory;
+  tags: string[];
+  image?: string;
+  featured?: boolean;
+}
 
 /**
  * 驗證 frontmatter 的 category 是否為有效值

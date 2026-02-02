@@ -164,9 +164,9 @@ export function PostArchive({ posts }: PostArchiveProps) {
                  onClick={() => toggleCategory(category)}
                >
                  <div className="w-6 h-6 flex items-center justify-center">
-                    <folder className={`w-5 h-5 text-blue-600 dark:text-blue-400 transition-transform ${isExpanded ? '' : '-rotate-90'}`}>
+                    <div className={`w-5 h-5 text-blue-600 dark:text-blue-400 transition-transform ${isExpanded ? '' : '-rotate-90'}`}>
                       <Folder className="w-full h-full fill-current" />
-                    </folder>
+                    </div>
                     {/* Expand Icon overlay? Or simply use click */}
                     <div className="absolute -left-6 opacity-0 group-hover:opacity-100 transition-opacity">
                        <ChevronDown className={`w-4 h-4 text-slate-400 ${isExpanded ? '' : '-rotate-90'}`} />
