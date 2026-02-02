@@ -1,59 +1,56 @@
-FROM node:20-alpine AS builder
+# Base image
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
 WORKDIR /app
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
+COPY package.json pnpm-lock.yaml* ./
+RUN npm install -g pnpm && pnpm i --frozen-lockfile
 
-# Copy package files for dependency installation (layer caching)
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY .npmrc* ./
-COPY frontend/package.json frontend/package.json
-COPY server/package.json server/package.json
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Install all dependencies (including devDependencies for build)
-# Use --shamefully-hoist to ensure React is available for Vite build
-RUN pnpm install --frozen-lockfile --shamefully-hoist
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line in case you want to disable telemetry during the build.
+ENV NEXT_TELEMETRY_DISABLED 1
 
-# Copy configuration files needed for build
-COPY postcss.config.js tailwind.config.js vite.config.ts ./
-COPY tsconfig.json tsconfig.server.json ./
-COPY index.html ./
+RUN npm install -g pnpm && pnpm run build
 
-# Copy source code and assets
-COPY scripts/ ./scripts/
-COPY frontend/ ./frontend/
-COPY server/ ./server/
-COPY shared/ ./shared/
-COPY posts/ ./posts/
-COPY public/ ./public/
-
-# Build the application
-ENV NODE_ENV=production
-RUN pnpm run build && \
-    test -f /app/dist/server/entry-server.mjs || (echo "ERROR: entry-server.mjs not found" && exit 1)
-
-# Prepare production node_modules with all runtime dependencies
-# entry-server.mjs needs React and React-DOM from frontend dependencies
-RUN mkdir -p /app/deploy && \
-    printf '{"dependencies":{"express":"^5.1.0","gray-matter":"^4.0.3","marked":"^16.4.2","sanitize-html":"^2.17.0","react":"^19.2.0","react-dom":"^19.2.0","lucide-react":"^0.553.0"}}\n' > /app/deploy/package.json && \
-    cd /app/deploy && \
-    npm install --production --legacy-peer-deps && \
-    rm package.json
-
-FROM node:20-alpine AS runner
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production \
-    CONTENT_BASE=/app/dist \
-    PORT=3000 \
-    LOW_MEMORY_MODE=true
+ENV NODE_ENV production
+# Uncomment the following line in case you want to disable telemetry during runtime.
+# ENV NEXT_TELEMETRY_DISABLED 1
 
-# Copy built artifacts and production dependencies only
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/deploy/node_modules ./node_modules
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
 
 EXPOSE 3000
 
-# Start the server directly (no need for run-server.mjs in Docker)
-CMD ["node", "--max-old-space-size=48", "dist/server/server.js"]
+ENV PORT 3000
+# set hostname to localhost
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]
