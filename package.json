@@ -15,9 +15,10 @@
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.563.0",
     "marked": "^15.0.0",
-    "next": "15.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "next": "16.1.6",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "sharp": "^0.34.5",
     "tailwindcss": "4.0.0-beta.8"
   },
   "devDependencies": {
